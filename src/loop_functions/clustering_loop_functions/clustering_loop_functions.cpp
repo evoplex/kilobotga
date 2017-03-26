@@ -8,13 +8,22 @@
 
 CClusteringLoopFunctions::CClusteringLoopFunctions()
     : m_iPopSize(10)
-    , m_pcRNG(NULL)
+    , m_pcRNG(CRandom::CreateRNG("kilobotga"))
 {
-    m_pcRNG = CRandom::CreateRNG("kilobotga");
 }
 
 void CClusteringLoopFunctions::Init(TConfigurationNode& t_node)
 {
+    GetNodeAttribute(t_node, "population_size", m_iPopSize);
+    GetNodeAttribute(t_node, "generations", m_iMaxGenerations);
+    GetNodeAttribute(t_node, "tournament_size", m_iTournamentSize);
+    GetNodeAttribute(t_node, "mutation_rate", m_fMutationRate);
+    GetNodeAttribute(t_node, "crossover_rate", m_fCrossoverRate);
+
+    // TODO: we should get it from the XML
+    m_arenaSideX = CRange<Real>(-0.5, 0.5);
+    m_arenaSideY = CRange<Real>(-0.5, 0.5);
+
     // Create the kilobots and get a reference to their controllers
     for (int id=0; id < m_iPopSize; ++id) {
         std::stringstream entityId;
@@ -26,26 +35,18 @@ void CClusteringLoopFunctions::Init(TConfigurationNode& t_node)
         m_controllers.push_back(&dynamic_cast<CKilobotClustering&>(kilobot->GetControllableEntity().GetController()));
     }
 
-    // TODO: we should get it from the XML
-    m_arenaSideX = CRange<Real>(-0.5, 0.5);
-    m_arenaSideY = CRange<Real>(-0.5, 0.5);
-
-    GetNodeAttribute(t_node, "population_size", m_iPopSize);
-    GetNodeAttribute(t_node, "generations", m_iMaxGenerations);
-    GetNodeAttribute(t_node, "tournament_size", m_iTournamentSize);
-    GetNodeAttribute(t_node, "mutation_rate", m_fMutationRate);
-    GetNodeAttribute(t_node, "crossover_rate", m_fCrossoverRate);
-
     Reset();
 }
 
 void CClusteringLoopFunctions::Reset()
 {
+    m_pcRNG->Reset();
+
     CQuaternion orientation;
     CVector3 position;
     const int maxPosTrial = 100;
 
-    // uniform distribution
+    // uniform distribution (random)
     for (uint32_t i = 0; i < m_entities.size(); ++i) {
         bool objAdded = false;
         for (int posTrial = 0; posTrial < maxPosTrial; ++posTrial) {

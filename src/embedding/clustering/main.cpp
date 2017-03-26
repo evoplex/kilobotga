@@ -109,6 +109,7 @@ void newGeneration(CClusteringLoopFunctions& loopFunction, CRandom::CRNG* prg)
 
     // run experiment for the new population
     static argos::CSimulator& simulator = argos::CSimulator::GetInstance();
+    //CRandom::GetCategory("kilobotga").ResetRNGs();
     simulator.Reset();
     for (int id = 0; id < popSize; ++id) {
         loopFunction.setLUTMotor(id, newPop.at(id));
@@ -118,15 +119,18 @@ void newGeneration(CClusteringLoopFunctions& loopFunction, CRandom::CRNG* prg)
 
 int main(int argc, char** argv)
 {
-    CRandom::CreateCategory("kilobotga", 7751);
-    CRandom::CRNG* prg = CRandom::CreateRNG("kilobotga");
-
     // initialize ARGoS
     static argos::CSimulator& simulator = argos::CSimulator::GetInstance();
 
     // load the experiment
+    CRandom::CreateCategory("kilobotga", 0); // reseed it later
     simulator.SetExperimentFileName("src/embedding/clustering/experiment.argos");
     simulator.LoadExperiment();
+
+    // create and seed our prg (using xml data)
+    CRandom::SetSeedOf("kilobotga", simulator.GetRandomSeed());
+    CRandom::GetCategory("kilobotga").ResetRNGs();
+    CRandom::CRNG* prg = CRandom::CreateRNG("kilobotga");
 
     // reference to the loop function
     static CClusteringLoopFunctions& loopFunction = dynamic_cast<CClusteringLoopFunctions&>(simulator.GetLoopFunctions());
@@ -136,6 +140,7 @@ int main(int argc, char** argv)
     // run genetic algorithm
     simulator.Reset();
     simulator.Execute();
+
     int generation = 0;
     while(generation < maxGenerations) {
         argos::LOG << "G#" << generation << "..." << loopFunction.getGlobalPerformance() << std::endl;

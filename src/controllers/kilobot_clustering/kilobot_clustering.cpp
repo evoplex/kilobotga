@@ -17,10 +17,10 @@ CKilobotClustering::CKilobotClustering() :
    m_kSpeedRange(0, 5),
    m_kMaxDistance(100),
    m_kMinDistance(34),
-   m_iLUTSize(8),
-   m_fPerformance(0.f)
+   m_iLUTSize(68),
+   m_fPerformance(0.f),
+   m_pcRNG(CRandom::CreateRNG("kilobotga"))
 {
-   m_pcRNG = CRandom::CreateRNG("kilobotga");
 }
 
 void CKilobotClustering::Init(TConfigurationNode& t_node) {
@@ -55,7 +55,7 @@ void CKilobotClustering::ControlStep()
     // otherwise, use the max+1 distance (no-signal)
     uint8_t distance = 0;
     if (in.size()) {
-        for (int i = 0; i < in.size(); ++i) {
+        for (uint32_t i = 0; i < in.size(); ++i) {
             distance += in[i].Distance.high_gain;
         }
         distance /= in.size();
@@ -63,7 +63,7 @@ void CKilobotClustering::ControlStep()
         distance = m_kMaxDistance + 1; // no-signal
     }
 
-    // update global performance
+    // update performance
     m_fPerformance += calcPerformance(getLUTIndex(distance));
     //LOG << m_fPerformance << std::endl;
 
@@ -87,6 +87,7 @@ void CKilobotClustering::initLUT()
         m.right = m_pcRNG->Uniform(m_kSpeedRange);
         m_lutMotor.push_back(m);
         m_lutDistance.push_back(distance);
+        //LOG << i << distance << m.left << m.right << std::endl;
         distance += distInterval;
     }
 }
