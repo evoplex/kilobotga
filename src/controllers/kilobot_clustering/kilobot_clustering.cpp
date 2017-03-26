@@ -56,17 +56,16 @@ void CKilobotClustering::ControlStep()
     uint8_t distance = 0;
     if (in.size()) {
         for (uint32_t i = 0; i < in.size(); ++i) {
-            distance += in[i].Distance.high_gain;
+            uint8_t d = in[i].Distance.high_gain;
+            m_fPerformance += calcPerformance(getLUTIndex(d)); // update performance
+            distance += d;
         }
         distance /= in.size();
-    } else {
-        distance = m_kMaxDistance + 1; // no-signal
+    } else { // no message was received
+        distance = m_kMaxDistance + 1;
     }
 
-    // update performance
-    m_fPerformance += calcPerformance(getLUTIndex(distance));
-    //LOG << m_fPerformance << std::endl;
-
+    // update speed
     const Motor m = m_lutMotor[getLUTIndex(distance)];
     m_pcMotors->SetLinearVelocity(m.left, m.right);
 }
