@@ -71,6 +71,7 @@ void newGeneration(CClusteringLoopFunctions& loopFunction, CRandom::CRNG* prg)
     const float crossoverRate = loopFunction.getCrossoverRate();
 
     Population newPop;
+    newPop.reserve(popSize);
 
     // elitism: keep the best robot
     uint32_t bestId = loopFunction.getBestRobotId();
@@ -84,7 +85,7 @@ void newGeneration(CClusteringLoopFunctions& loopFunction, CRandom::CRNG* prg)
         while (id1 == id2) id2 = tournamentSelection(loopFunction, prg);
 
         LUTMotor lutMotor1 = loopFunction.getLUTMotor(id1);
-        LUTMotor lutMotor2 = loopFunction.getLUTMotor(id1);
+        LUTMotor lutMotor2 = loopFunction.getLUTMotor(id2);
 
         // crossover
         LUTMotor children = lutMotor1;
