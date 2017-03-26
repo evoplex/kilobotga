@@ -11,8 +11,10 @@
 #include <argos3/plugins/robots/kilobot/simulator/kilobot_entity.h>
 #include <controllers/kilobot_clustering/kilobot_clustering.h>
 
-typedef std::vector<int> int_vec_t;
-
+/**
+ * @brief The CClusteringLoopFunctions class
+ * @author Marcos Cardinot <mcardinot@gmail.com>
+ */
 class CClusteringLoopFunctions : public CLoopFunctions {
 
 public:

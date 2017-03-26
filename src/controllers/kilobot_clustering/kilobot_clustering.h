@@ -6,13 +6,12 @@
 #define KILOBOT_CLUSTERING_H
 
 #include <argos3/core/control_interface/ci_controller.h>
+#include <argos3/core/utility/math/rng.h>
 #include <argos3/plugins/robots/generic/control_interface/ci_differential_steering_actuator.h>
 
 #include <argos3/plugins/robots/kilobot/control_interface/ci_kilobot_communication_actuator.h>
 #include <argos3/plugins/robots/kilobot/control_interface/ci_kilobot_communication_sensor.h>
 
-#include <argos3/core/utility/math/rng.h> // Random number generator
-#include <argos3/core/utility/logging/argos_log.h> // Logging functions
 
 using namespace argos;
 

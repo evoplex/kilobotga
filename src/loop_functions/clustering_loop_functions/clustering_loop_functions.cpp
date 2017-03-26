@@ -3,7 +3,6 @@
  */
 
 #include "clustering_loop_functions.h"
-#include <string>
 #include <sstream>
 #include <vector>
 

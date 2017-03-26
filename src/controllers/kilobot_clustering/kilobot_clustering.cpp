@@ -3,8 +3,9 @@
  */
 
 #include "kilobot_clustering.h"
-#include <argos3/core/utility/configuration/argos_configuration.h>
 
+#include <argos3/core/utility/configuration/argos_configuration.h>
+#include <argos3/core/utility/logging/argos_log.h>
 
 #define ALPHA -3 // d=[0,ALPHA]
 #define MAX_LOCAL_PERFORMANCE 20 // max benefit
