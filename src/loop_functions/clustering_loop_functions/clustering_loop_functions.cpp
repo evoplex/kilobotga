@@ -46,7 +46,7 @@ void CClusteringLoopFunctions::Reset()
     const int maxPosTrial = 100;
 
     // uniform distribution
-    for (int i = 0; i < m_entities.size(); ++i) {
+    for (uint32_t i = 0; i < m_entities.size(); ++i) {
         bool objAdded = false;
         for (int posTrial = 0; posTrial < maxPosTrial; ++posTrial) {
             CRadians zAngle = m_pcRNG->Uniform(CRadians::UNSIGNED_RANGE);
@@ -69,7 +69,7 @@ uint32_t CClusteringLoopFunctions::getBestRobotId()
 {
     int bestId = -1;
     float bestPerf = -1.f;
-    for (int id = 0; id < m_controllers.size(); ++id) {
+    for (uint32_t id = 0; id < m_controllers.size(); ++id) {
         float perf = m_controllers[id]->getPerformance();
         if (bestPerf < perf) {
             bestPerf = perf;
@@ -82,7 +82,7 @@ uint32_t CClusteringLoopFunctions::getBestRobotId()
 float CClusteringLoopFunctions::getGlobalPerformance()
 {
     float ret = 0.f;
-    for (int id = 0; id < m_controllers.size(); ++id) {
+    for (uint32_t id = 0; id < m_controllers.size(); ++id) {
         ret += m_controllers[id]->getPerformance();
     }
     return ret;

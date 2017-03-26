@@ -18,7 +18,7 @@ void flushLUT(const int id, const int generation, const LUTMotor& lutMotor)
     std::ostringstream cOSS;
     cOSS << "kb" << id << "_g" << generation << ".dat";
     std::ofstream cOFS(cOSS.str().c_str(), std::ios::out | std::ios::trunc);
-    for (int i = 0; i < lutMotor.size(); ++i) {
+    for (uint32_t i = 0; i < lutMotor.size(); ++i) {
         cOFS << lutMotor.at(i).left << lutMotor.at(i).right << std::endl;
     }
 }
@@ -32,11 +32,11 @@ int tournamentSelection(CClusteringLoopFunctions& loopFunction, CRandom::CRNG* p
     std::vector<uint32_t> ids;
     ids.reserve(tournamentSize);
     while (ids.size() < tournamentSize) {
-        const int randId = prg->Uniform(CRange<UInt32>(0, popSize));
+        const uint32_t randId = prg->Uniform(CRange<UInt32>(0, popSize));
 
         // check if randId has not already been chosen
         bool exists = false;
-        for (int i = 0; i < ids.size(); ++i) {
+        for (uint32_t i = 0; i < ids.size(); ++i) {
             if (randId == ids[i]) {
                 exists = true;
                 break;
@@ -51,7 +51,7 @@ int tournamentSelection(CClusteringLoopFunctions& loopFunction, CRandom::CRNG* p
     // get the fittest
     float bestPerf = -1;
     int bestPerfId = -1;
-    for (int i = 0; i < ids.size(); ++i) {
+    for (uint32_t i = 0; i < ids.size(); ++i) {
         float perf = loopFunction.getPerformance(ids.at(i));
         if (perf > bestPerf) {
             bestPerf = perf;
@@ -88,14 +88,14 @@ void newGeneration(CClusteringLoopFunctions& loopFunction, CRandom::CRNG* prg)
 
         // crossover
         LUTMotor children = lutMotor1;
-        for (int i = 0; i < lutMotor1.size(); ++i) {
+        for (uint32_t i = 0; i < lutMotor1.size(); ++i) {
             if (prg->Uniform(CRange<Real>(0, 1)) <= crossoverRate) {
                 children[i] = lutMotor2[i];
             }
         }
 
         // mutation
-        for (int i = 0; i < children.size(); ++i) {
+        for (uint32_t i = 0; i < children.size(); ++i) {
             if (prg->Uniform(CRange<Real>(0, 1)) <= mutationRate) {
                 Motor motor;
                 motor.left = prg->Uniform(loopFunction.getSpeedRange());
