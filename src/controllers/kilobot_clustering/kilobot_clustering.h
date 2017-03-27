@@ -15,9 +15,10 @@
 
 using namespace argos;
 
+// Motor speed [0, 1)
 typedef struct {
-   uint8_t left;
-   uint8_t right;
+   Real left;
+   Real right;
 } Motor;
 
 typedef std::vector<Motor> LUTMotor;
@@ -38,7 +39,7 @@ public:
     virtual void Reset();
     virtual void Destroy() {}
 
-    inline const CRange<UInt32>& getSpeedRange() const { return m_kSpeedRange; }
+    inline const CRange<Real>& getSpeedRange() const { return m_kSpeedRange; }
     inline const float& getPerformance() const { return m_fPerformance; }
     inline const int& getLUTSize() const { return m_iLUTSize; }
     inline const LUTMotor& getLUTMotor() const { return m_lutMotor; }
@@ -51,7 +52,7 @@ private:
      CCI_KilobotCommunicationSensor* m_pcSensorIn;
 
      // constants
-     const CRange<UInt32> m_kSpeedRange;
+     const CRange<Real> m_kSpeedRange;
      const uint8_t m_kMaxDistance;    // maximum distance from another robot in mm
      const uint8_t m_kMinDistance;    // minimum distance from another robot in mm
 

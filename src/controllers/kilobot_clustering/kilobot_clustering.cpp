@@ -7,14 +7,17 @@
 #include <argos3/core/utility/configuration/argos_configuration.h>
 #include <argos3/core/utility/logging/argos_log.h>
 
-#define ALPHA -3 // d=[0,ALPHA]
-#define MAX_LOCAL_PERFORMANCE 20 // max benefit
+// parameters of our fitness function
+#define ALPHA 3 // begning of the long tail
+#define MAX_LOCAL_PERFORMANCE 20 // max score received in one interaction
+
+#define SPEED_SCALE 10
 
 CKilobotClustering::CKilobotClustering() :
    m_pcMotors(NULL),
    m_pcSensorOut(NULL),
    m_pcSensorIn(NULL),
-   m_kSpeedRange(0, 5),
+   m_kSpeedRange(0, 1),
    m_kMaxDistance(100),
    m_kMinDistance(34),
    m_iLUTSize(68),
@@ -67,7 +70,7 @@ void CKilobotClustering::ControlStep()
 
     // update speed
     const Motor m = m_lutMotor[getLUTIndex(distance)];
-    m_pcMotors->SetLinearVelocity(m.left, m.right);
+    m_pcMotors->SetLinearVelocity(m.left * SPEED_SCALE, m.right * SPEED_SCALE);
 }
 
 void CKilobotClustering::initLUT()
@@ -105,7 +108,7 @@ int CKilobotClustering::getLUTIndex(uint8_t distance)
 float CKilobotClustering::calcPerformance(uint8_t distance)
 {
     float x = distance + 1.f; // distance might be 0, so let's sum 1
-    return MAX_LOCAL_PERFORMANCE * pow(x, ALPHA);
+    return MAX_LOCAL_PERFORMANCE * pow(x, -ALPHA);
 }
 
 
