@@ -37,7 +37,7 @@ public:
    inline const float& getMutationRate() const { return m_fMutationRate; }
    inline const float& getCrossoverRate() const { return m_fCrossoverRate; }
    inline const int& getLUTSize() const { return m_controllers.at(0)->getLUTSize(); }
-   inline const CRange<UInt32>& getSpeedRange() const { return m_controllers.at(0)->getSpeedRange(); }
+   inline const CRange<Real>& getSpeedRange() const { return m_controllers.at(0)->getSpeedRange(); }
 
 private:
    int m_iPopSize;

@@ -97,7 +97,7 @@ void CKilobotClustering::initLUT()
 int CKilobotClustering::getLUTIndex(uint8_t distance)
 {
     if (distance <= m_kMaxDistance) {
-        for (int idx = 0; idx < m_lutDistance.size(); ++idx) {
+        for (size_t idx = 0; idx < m_lutDistance.size(); ++idx) {
             if (distance < m_lutDistance[idx])
                 return idx;
         }
