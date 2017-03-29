@@ -6,9 +6,7 @@
   <!-- ************************* -->
   <framework>
     <system threads="0" />
-    <experiment length="120"
-                ticks_per_second="10"
-                random_seed="124" />
+    <experiment length="500" ticks_per_second="10" random_seed="124" />
   </framework>
 
   <!-- *************** -->
@@ -24,7 +22,7 @@
       <sensors>
          <kilobot_communication implementation="default" show_rays="true" medium="kilomedium" />
       </sensors>
-      <params lut_size="8" />
+      <params lut_size="22" />
     </kilobot_clustering_controller>
 
   </controllers>
@@ -34,11 +32,12 @@
   <!-- ****************** -->
   <loop_functions library="build/loop_functions/clustering_loop_functions/libclustering_loop_functions"
                   label="clustering_loop_functions"
-                  population_size="10"
-                  generations="500"
+                  population_size="50"
+                  generations="100"
                   tournament_size="2"
-                  crossover_rate="0.2"
-                  mutation_rate="0.0" />
+                  crossover_rate="0.5"
+                  mutation_rate="0.0"
+                  read_from_file="false" />
 
   <!-- *********************** -->
   <!-- * Arena configuration * -->
@@ -78,7 +77,6 @@
   <!-- ****************** -->
   <!-- * Visualization * -->
   <!-- ****************** -->
-<!--
   <visualization>
     <qt-opengl>
       <camera>
@@ -87,8 +85,5 @@
       </camera>
     </qt-opengl>
   </visualization>
--->
-  <!-- We don't want nor need a visualization during evolution -->
-  <visualization />
 
 </argos-configuration>
