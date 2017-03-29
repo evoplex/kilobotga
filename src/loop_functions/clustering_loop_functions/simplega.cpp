@@ -39,20 +39,22 @@ CSimpleGA::CSimpleGA(std::vector<CKilobotClustering*>& ctrls, TConfigurationNode
             LOGERR << "Unable to create a directory in "
                    << dir.absolutePath().append(m_sRelativePath).toStdString()
                    << " Results will NOT be stored!" << std::endl;
-        }
-
-        // create new folders for each generation
-        if (m_bStoreData && dir.cd(m_sRelativePath)) {
+        } else if (dir.cd(m_sRelativePath)) {
+            // create new folders for each generation
             for (int g = 0; g < maxGenerations; ++g) {
                 dir.mkdir(QString::number(g));
             }
+
             // copy the .argos file
+            SetNodeAttribute(t_node, "read_from_file", "true");
             t_node.GetDocument()->SaveFile(QString(m_sRelativePath + "/exp.argos").toStdString());
+            SetNodeAttribute(t_node, "read_from_file", "false");
+
             // hide visualization during evolution
             t_node.GetDocument()->FirstChildElement()->FirstChildElement()->NextSiblingElement("visualization")->Clear();
-        }
 
-        m_bStoreData = true;
+            m_bStoreData = true;
+        }
     }
 }
 
