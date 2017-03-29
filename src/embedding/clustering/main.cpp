@@ -13,13 +13,56 @@
 
 typedef std::vector<LUTMotor> Population;
 
-void flushLUT(const int id, const int generation, const LUTMotor& lutMotor)
+#include <fstream>
+
+LUTMotor loadLUTMotor(const std::string& str_filename, const uint8_t lutSize)
 {
-    std::ostringstream cOSS;
-    cOSS << "kb" << id << "_g" << generation << ".dat";
-    std::ofstream cOFS(cOSS.str().c_str(), std::ios::out | std::ios::trunc);
-    for (uint32_t i = 0; i < lutMotor.size(); ++i) {
-        cOFS << lutMotor.at(i).left << lutMotor.at(i).right << std::endl;
+   // open the input file
+   std::ifstream cIn(str_filename.c_str(), std::ios::in);
+   if(!cIn) {
+      THROW_ARGOSEXCEPTION("Cannot open parameter file '" << str_filename << "' for reading");
+   }
+
+   LUTMotor lutMotor;
+   lutMotor.reserve(lutSize);
+   for(size_t i = 0; i < lutSize; ++i) {
+       Motor m;
+      if(!(cIn >> m.left >> m.right)) {
+         THROW_ARGOSEXCEPTION("Cannot read data from file '" << str_filename << "'");
+      }
+      lutMotor.push_back(m);
+   }
+
+   return lutMotor;
+}
+
+void loadPopulation(CClusteringLoopFunctions& loopFunction, const int generation)
+{
+    static argos::CSimulator& simulator = argos::CSimulator::GetInstance();
+
+    const int lutSize = loopFunction.getLUTSize();
+    const int popSize = loopFunction.getPopSize();
+
+    simulator.Reset();
+    for (int kb = 0; kb < popSize; ++kb) {
+        std::ostringstream cOSS;
+        cOSS << "kb" << kb << "_g" << generation << ".dat";
+        loopFunction.setLUTMotor(kb, loadLUTMotor(cOSS.str(), lutSize));
+    }
+    simulator.Execute();
+}
+
+
+void flushLUT(const Population& pop, const int generation)
+{
+    for (uint32_t kb = 0; kb < pop.size(); ++kb) {
+        std::ostringstream cOSS;
+        cOSS << "kb" << kb << "_g" << generation << ".dat";
+        std::ofstream cOFS(cOSS.str().c_str(), std::ios::out | std::ios::trunc);
+        LUTMotor lutMotor = pop[kb];
+        for (uint32_t m = 0; m < lutMotor.size(); ++m) {
+            cOFS << lutMotor[m].left << "\t" << lutMotor[m].right << std::endl;
+        }
     }
 }
 
@@ -61,12 +104,10 @@ int tournamentSelection(CClusteringLoopFunctions& loopFunction, CRandom::CRNG* p
     return bestPerfId;
 }
 
-void newGeneration(CClusteringLoopFunctions& loopFunction, CRandom::CRNG* prg)
+Population newGeneration(CClusteringLoopFunctions& loopFunction, CRandom::CRNG* prg)
 {
     // retrieve a few settings from the 'experiment.argos' file
-    const int lutSize = loopFunction.getLUTSize();
     const int popSize = loopFunction.getPopSize();
-    const int tournamentSize = loopFunction.getTournamentSize();
     const float mutationRate = loopFunction.getMutationRate();
     const float crossoverRate = loopFunction.getCrossoverRate();
 
@@ -77,6 +118,8 @@ void newGeneration(CClusteringLoopFunctions& loopFunction, CRandom::CRNG* prg)
     uint32_t bestId = loopFunction.getBestRobotId();
     newPop.push_back(loopFunction.getLUTMotor(bestId));
 
+    const CRange<Real> zeroOne(0, 1);
+
     for (int i = 1; i < popSize; ++i) {
         // select two individuals
         int id1 = tournamentSelection(loopFunction, prg);
@@ -86,22 +129,26 @@ void newGeneration(CClusteringLoopFunctions& loopFunction, CRandom::CRNG* prg)
 
         LUTMotor lutMotor1 = loopFunction.getLUTMotor(id1);
         LUTMotor lutMotor2 = loopFunction.getLUTMotor(id2);
+        LUTMotor children = lutMotor1;
 
         // crossover
-        LUTMotor children = lutMotor1;
-        for (uint32_t i = 0; i < lutMotor1.size(); ++i) {
-            if (prg->Uniform(CRange<Real>(0, 1)) <= crossoverRate) {
-                children[i] = lutMotor2[i];
+        if (crossoverRate > 0.f) {
+            for (uint32_t i = 0; i < lutMotor1.size(); ++i) {
+                if (prg->Uniform(zeroOne) <= crossoverRate) {
+                    children[i] = lutMotor2[i];
+                }
             }
         }
 
         // mutation
-        for (uint32_t i = 0; i < children.size(); ++i) {
-            if (prg->Uniform(CRange<Real>(0, 1)) <= mutationRate) {
-                Motor motor;
-                motor.left = prg->Uniform(loopFunction.getSpeedRange());
-                motor.right = prg->Uniform(loopFunction.getSpeedRange());
-                children[i] = motor;
+        if (mutationRate > 0.f) {
+            for (uint32_t i = 0; i < children.size(); ++i) {
+                if (prg->Uniform(zeroOne) <= mutationRate) {
+                    Motor motor;
+                    motor.left = prg->Uniform(loopFunction.getSpeedRange());
+                    motor.right = prg->Uniform(loopFunction.getSpeedRange());
+                    children[i] = motor;
+                }
             }
         }
 
@@ -113,9 +160,11 @@ void newGeneration(CClusteringLoopFunctions& loopFunction, CRandom::CRNG* prg)
     //CRandom::GetCategory("kilobotga").ResetRNGs();
     simulator.Reset();
     for (int id = 0; id < popSize; ++id) {
-        loopFunction.setLUTMotor(id, newPop.at(id));
+        loopFunction.setLUTMotor(id, newPop[id]);
     }
     simulator.Execute();
+
+    return newPop;
 }
 
 int main(int argc, char** argv)
@@ -138,16 +187,24 @@ int main(int argc, char** argv)
 
     const int maxGenerations = loopFunction.getMaxGenerations();
 
+    //loadPopulation(loopFunction, maxGenerations);
+
     // run genetic algorithm
     simulator.Reset();
     simulator.Execute();
 
+
+/*
+    Population pop;
     int generation = 0;
     while(generation < maxGenerations) {
-        argos::LOG << "G#" << generation << "..." << loopFunction.getGlobalPerformance() << std::endl;
-        newGeneration(loopFunction, prg);
+        argos::LOG << generation << "\t" << loopFunction.getGlobalPerformance() << std::endl;
+        pop = newGeneration(loopFunction, prg);
         ++generation;
     }
+*/
+    // flush last generation
+    //flushLUT(pop, generation);
 
     // dispose of ARGoS stuff
     simulator.Destroy();
