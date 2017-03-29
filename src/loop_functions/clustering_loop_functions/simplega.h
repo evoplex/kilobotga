@@ -6,6 +6,7 @@
 #define SIMPLE_GA_H
 
 #include <controllers/kilobot_clustering/kilobot_clustering.h>
+#include <loop_functions/clustering_loop_functions/clustering_loop_functions.h>
 
 #include <QString>
 
@@ -26,6 +27,7 @@ private:
     std::vector<CKilobotClustering*> m_controllers;
     CRandom::CRNG* m_pcRNG;
 
+    SIM_TYPE m_eSimType;
     int m_iPopSize;
     int m_iMaxGenerations;
     int m_iTournamentSize;

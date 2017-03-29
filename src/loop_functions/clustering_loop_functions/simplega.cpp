@@ -21,17 +21,16 @@ CSimpleGA::CSimpleGA(std::vector<CKilobotClustering*>& ctrls, TConfigurationNode
     GetNodeAttribute(t_node, "tournament_size", m_iTournamentSize);
     GetNodeAttribute(t_node, "mutation_rate", m_fMutationRate);
     GetNodeAttribute(t_node, "crossover_rate", m_fCrossoverRate);
+    GetNodeAttribute(t_node, "simulation_type", m_eSimType);
 
     int maxGenerations = 0;
-    bool readingFromFile = false;
     GetNodeAttribute(t_node, "generations", maxGenerations);
-    GetNodeAttribute(t_node, "read_from_file", readingFromFile);
 
     m_nextGen.reserve(m_iPopSize);
 
-    // if we are not loading an old experiment,
+    // if we are loading a new experiment,
     // then we should prepare the directories
-    if (!readingFromFile) {
+    if (m_eSimType == NEW_EXPERIMENT) {
         // try to create a new directory to store our results
         m_sRelativePath = QDateTime::currentDateTime().toString("dd.MM.yy_hh.mm.ss");
         QDir dir(QDir::currentPath());

@@ -12,6 +12,7 @@
 
 CClusteringLoopFunctions::CClusteringLoopFunctions()
     : m_cGA(NULL)
+    , m_eSimType(TEST_SETTINGS)
     , m_iPopSize(10)
     , m_iCurGeneration(0)
 {
@@ -25,8 +26,8 @@ void CClusteringLoopFunctions::Init(TConfigurationNode& t_node)
     // retrieve a few settings from the '.argos' file
     // other stuff will be retrieved by the CSimpleGA class
     GetNodeAttribute(t_node, "population_size", m_iPopSize);
-    GetNodeAttribute(t_node, "read_from_file", m_bReadFromFile);
     GetNodeAttribute(t_node, "generations", m_iMaxGenerations);
+    GetNodeAttribute(t_node, "simulation_type", m_eSimType);
 
     // TODO: we should get it from the XML too
     m_arenaSideX = CRange<Real>(-0.5, 0.5);
@@ -51,7 +52,7 @@ void CClusteringLoopFunctions::Init(TConfigurationNode& t_node)
 
     // if we're just reading from files (i.e., reproducing an old experiment),
     // so we do not  to do any of the GA stuff, we just need to load the LUTs
-    if (m_bReadFromFile) {
+    if (m_eSimType == REPLAY_EXPERIMENT) {
         QDir dir;
         int g = -1;
         while (g < 0) {
