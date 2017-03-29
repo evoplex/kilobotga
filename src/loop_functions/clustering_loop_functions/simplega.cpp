@@ -1,89 +1,116 @@
+/*
+ * Marcos Cardinot <mcardinot@gmail.com>
+ */
+
 #include "simplega.h"
+
+#include <argos3/core/utility/logging/argos_log.h>
+#include <argos3/core/utility/configuration/tinyxml/ticpp.h>
+
+#include <QDateTime>
+#include <QDir>
+#include <fstream>
 
 CSimpleGA::CSimpleGA(std::vector<CKilobotClustering*>& ctrls, TConfigurationNode& t_node)
     : m_controllers(ctrls)
     , m_pcRNG(CRandom::CreateRNG("kilobotga"))
+    , m_iCurGeneration(0)
+    , m_bStoreData(true)
 {
     GetNodeAttribute(t_node, "population_size", m_iPopSize);
     GetNodeAttribute(t_node, "generations", m_iMaxGenerations);
     GetNodeAttribute(t_node, "tournament_size", m_iTournamentSize);
     GetNodeAttribute(t_node, "mutation_rate", m_fMutationRate);
     GetNodeAttribute(t_node, "crossover_rate", m_fCrossoverRate);
+
+    int maxGenerations = 0;
+    GetNodeAttribute(t_node, "generations", maxGenerations);
+
+    m_nextGen.reserve(m_iPopSize);
+
+    // try to create a new directory to store our results
+    m_sRelativePath = QDateTime::currentDateTime().toString();
+    QDir dir(QDir::currentPath());
+    if (!dir.mkdir(m_sRelativePath)) {
+        LOGERR << "Unable to create a directory in "
+               << dir.absolutePath().append(m_sRelativePath).toStdString()
+               << " Results will NOT be stored!" << std::endl;
+        m_bStoreData = false;
+    }
+
+    // create new folders for each generation
+    if (m_bStoreData && dir.cd(m_sRelativePath)) {
+        for (int g = 0; g < maxGenerations; ++g) {
+            dir.mkdir(QString::number(g));
+        }
+        // copy the .argos file
+        t_node.GetDocument()->SaveFile(QString(m_sRelativePath + "/exp.argos").toStdString());
+        // hide visualization during evolution
+        t_node.GetDocument()->FirstChildElement()->FirstChildElement()->NextSiblingElement("visualization")->Clear();
+    }
 }
 
-Population CSimpleGA::newGeneration()
+void CSimpleGA::prepareNextGen()
 {
-    // retrieve a few settings from the 'experiment.argos' file
-    const int popSize = loopFunction.getPopSize();
-    const float mutationRate = loopFunction.getMutationRate();
-    const float crossoverRate = loopFunction.getCrossoverRate();
-
-    Population newPop;
-    newPop.reserve(popSize);
+    m_nextGen.clear();
 
     // elitism: keep the best robot
-    uint32_t bestId = loopFunction.getBestRobotId();
-    newPop.push_back(loopFunction.getLUTMotor(bestId));
+    uint32_t bestId = getBestRobotId();
+    m_nextGen.push_back(m_controllers[bestId]->getLUTMotor());
 
     const CRange<Real> zeroOne(0, 1);
 
-    for (int i = 1; i < popSize; ++i) {
+    for (int i = 1; i < m_iPopSize; ++i) {
         // select two individuals
-        int id1 = tournamentSelection(loopFunction, prg);
-        int id2 = tournamentSelection(loopFunction, prg);
+        int id1 = tournamentSelection();
+        int id2 = tournamentSelection();
         // make sure they are different
-        while (id1 == id2) id2 = tournamentSelection(loopFunction, prg);
+        while (id1 == id2) id2 = tournamentSelection();
 
-        LUTMotor lutMotor1 = loopFunction.getLUTMotor(id1);
-        LUTMotor lutMotor2 = loopFunction.getLUTMotor(id2);
+        LUTMotor lutMotor1 = m_controllers[id1]->getLUTMotor();
+        LUTMotor lutMotor2 = m_controllers[id2]->getLUTMotor();
         LUTMotor children = lutMotor1;
 
         // crossover
-        if (crossoverRate > 0.f) {
+        if (m_fCrossoverRate > 0.f) {
             for (uint32_t i = 0; i < lutMotor1.size(); ++i) {
-                if (prg->Uniform(zeroOne) <= crossoverRate) {
+                if (m_pcRNG->Uniform(zeroOne) <= m_fCrossoverRate) {
                     children[i] = lutMotor2[i];
                 }
             }
         }
 
         // mutation
-        if (mutationRate > 0.f) {
+        if (m_fMutationRate > 0.f) {
             for (uint32_t i = 0; i < children.size(); ++i) {
-                if (prg->Uniform(zeroOne) <= mutationRate) {
+                if (m_pcRNG->Uniform(zeroOne) <= m_fMutationRate) {
                     Motor motor;
-                    motor.left = prg->Uniform(loopFunction.getSpeedRange());
-                    motor.right = prg->Uniform(loopFunction.getSpeedRange());
+                    motor.left = m_pcRNG->Uniform(zeroOne);
+                    motor.right = m_pcRNG->Uniform(zeroOne);
                     children[i] = motor;
                 }
             }
         }
 
-        newPop.push_back(children);
+        m_nextGen.push_back(children);
     }
+}
 
-    // run experiment for the new population
-    static argos::CSimulator& simulator = argos::CSimulator::GetInstance();
-    //CRandom::GetCategory("kilobotga").ResetRNGs();
-    simulator.Reset();
-    for (int id = 0; id < popSize; ++id) {
-        loopFunction.setLUTMotor(id, newPop[id]);
+void CSimpleGA::loadNextGen()
+{
+    for (int kbId = 0; kbId < m_iPopSize; ++kbId) {
+        m_controllers[kbId]->setLUTMotor(m_nextGen[kbId]);
     }
-    simulator.Execute();
-
-    return newPop;
+    ++m_iCurGeneration;
 }
 
 int CSimpleGA::tournamentSelection()
 {
-    const int popSize = loopFunction.getPopSize();
-    const size_t tournamentSize = loopFunction.getTournamentSize();
-
-    // select random ids (we make sure they are different)
+    // select random ids (make sure they are different)
     std::vector<uint32_t> ids;
-    ids.reserve(tournamentSize);
-    while (ids.size() < tournamentSize) {
-        const uint32_t randId = prg->Uniform(CRange<UInt32>(0, popSize));
+    ids.reserve(m_iTournamentSize);
+    while (ids.size() < m_iTournamentSize) {
+        const uint32_t randId = m_pcRNG->Uniform(CRange<UInt32>(0, m_iPopSize));
 
         // check if randId has not already been chosen
         bool exists = false;
@@ -103,11 +130,53 @@ int CSimpleGA::tournamentSelection()
     float bestPerf = -1;
     int bestPerfId = -1;
     for (uint32_t i = 0; i < ids.size(); ++i) {
-        float perf = loopFunction.getPerformance(ids.at(i));
+        float perf = m_controllers[ids.at(i)]->getPerformance();
         if (perf > bestPerf) {
             bestPerf = perf;
             bestPerfId = ids.at(i);
         }
     }
     return bestPerfId;
+}
+
+void CSimpleGA::flushIndividuals() const
+{
+    if (!m_bStoreData) {
+        return;
+    }
+
+    for (int kbId = 0; kbId < m_iPopSize; ++kbId) {
+        QString path = QString("%1/%2/kb_%3.dat").arg(m_sRelativePath).arg(m_iCurGeneration).arg(kbId);
+        std::ostringstream cOSS;
+        cOSS << path.toStdString();
+        std::ofstream cOFS(cOSS.str().c_str(), std::ios::out | std::ios::trunc);
+
+        LUTMotor lutMotor = m_controllers[kbId]->getLUTMotor();
+        for (uint32_t m = 0; m < lutMotor.size(); ++m) {
+            cOFS << lutMotor[m].left << "\t" << lutMotor[m].right << std::endl;
+        }
+    }
+}
+
+float CSimpleGA::getGlobalPerformance() const
+{
+    float ret = 0.f;
+    for (uint32_t kbId = 0; kbId < m_controllers.size(); ++kbId) {
+        ret += m_controllers[kbId]->getPerformance();
+    }
+    return ret;
+}
+
+uint32_t CSimpleGA::getBestRobotId()
+{
+    int bestId = -1;
+    float bestPerf = -1.f;
+    for (uint32_t kbId = 0; kbId < m_controllers.size(); ++kbId) {
+        float perf = m_controllers[kbId]->getPerformance();
+        if (bestPerf < perf) {
+            bestPerf = perf;
+            bestId = kbId;
+        }
+    }
+    return bestId;
 }
