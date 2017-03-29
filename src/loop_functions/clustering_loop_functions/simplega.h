@@ -17,9 +17,8 @@ public:
 
     void prepareNextGen();
     void loadNextGen();
-    void flushIndividuals() const;
+    void flushIndividuals(const int curGeneration) const;
     float getGlobalPerformance() const;
-    inline const int& getCurGeneration() const { return m_iCurGeneration; }
 
 private:
     typedef std::vector<LUTMotor> Population;

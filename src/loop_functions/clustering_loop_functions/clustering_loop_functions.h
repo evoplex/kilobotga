@@ -11,6 +11,10 @@
 #include <argos3/plugins/robots/kilobot/simulator/kilobot_entity.h>
 #include <controllers/kilobot_clustering/kilobot_clustering.h>
 
+#include "simplega.h"
+
+#include <QFileInfo>
+
 /**
  * @brief The CClusteringLoopFunctions class
  * @author Marcos Cardinot <mcardinot@gmail.com>
@@ -23,13 +27,7 @@ public:
 
    virtual void Init(TConfigurationNode& t_node);
    virtual void Reset();
-
-   uint32_t getBestRobotId();
-   float getGlobalPerformance();
-   float getPerformance(const uint32_t id);
-
-   LUTMotor getLUTMotor(uint32_t id);
-   void setLUTMotor(uint32_t id, LUTMotor lutMotor);
+   virtual void PostExperiment();
 
    inline const int& getPopSize() const { return m_iPopSize; }
    inline const int& getMaxGenerations() const { return m_iMaxGenerations; }
@@ -40,19 +38,23 @@ public:
    inline const CRange<Real>& getSpeedRange() const { return m_controllers.at(0)->getSpeedRange(); }
 
 private:
+   std::vector<CKilobotEntity*> m_entities;
+   std::vector<CKilobotClustering*> m_controllers;
+   CSimpleGA* m_cGA;
+   CRandom::CRNG* m_pcRNG;
+
    int m_iPopSize;
+   int m_iCurGeneration;
+   bool m_bReadFromFile;
+   CRange<Real> m_arenaSideX;
+   CRange<Real> m_arenaSideY;
+
    int m_iMaxGenerations;
    int m_iTournamentSize;
    float m_fMutationRate;
    float m_fCrossoverRate;
 
-   CRange<Real> m_arenaSideX;
-   CRange<Real> m_arenaSideY;
-
-   std::vector<CKilobotEntity*> m_entities;
-   std::vector<CKilobotClustering*> m_controllers;
-   CRandom::CRNG* m_pcRNG;
-
+   bool loadLUTMotor(int kbId, QString absoluteFilePath);
    bool robotExists(const uint32_t id);
 };
 

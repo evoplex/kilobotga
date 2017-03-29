@@ -3,24 +3,32 @@
  */
 
 #include "clustering_loop_functions.h"
+
+#include <QDebug>
+#include <QDir>
+#include <QTextStream>
 #include <sstream>
 #include <vector>
 
 CClusteringLoopFunctions::CClusteringLoopFunctions()
-    : m_iPopSize(10)
-    , m_pcRNG(CRandom::CreateRNG("kilobotga"))
+    : m_cGA(NULL)
+    , m_iPopSize(10)
+    , m_iCurGeneration(0)
 {
+    // create and seed our prg (using xml data)
+    CRandom::CreateCategory("kilobotga", GetSimulator().GetRandomSeed());
+    m_pcRNG = CRandom::CreateRNG("kilobotga");
 }
 
 void CClusteringLoopFunctions::Init(TConfigurationNode& t_node)
 {
+    // retrieve a few settings from the '.argos' file
+    // other stuff will be retrieved by the CSimpleGA class
     GetNodeAttribute(t_node, "population_size", m_iPopSize);
+    GetNodeAttribute(t_node, "read_from_file", m_bReadFromFile);
     GetNodeAttribute(t_node, "generations", m_iMaxGenerations);
-    GetNodeAttribute(t_node, "tournament_size", m_iTournamentSize);
-    GetNodeAttribute(t_node, "mutation_rate", m_fMutationRate);
-    GetNodeAttribute(t_node, "crossover_rate", m_fCrossoverRate);
 
-    // TODO: we should get it from the XML
+    // TODO: we should get it from the XML too
     m_arenaSideX = CRange<Real>(-0.5, 0.5);
     m_arenaSideY = CRange<Real>(-0.5, 0.5);
 
@@ -35,11 +43,59 @@ void CClusteringLoopFunctions::Init(TConfigurationNode& t_node)
         m_controllers.push_back(&dynamic_cast<CKilobotClustering&>(kilobot->GetControllableEntity().GetController()));
     }
 
+    // reset everything first
     Reset();
+
+    // create the GA object
+    m_cGA = new CSimpleGA(m_controllers, t_node);
+
+    // if we're just reading from files (i.e., reproducing an old experiment),
+    // so we do not  to do any of the GA stuff, we just need to load the LUTs
+    if (m_bReadFromFile) {
+        QDir dir;
+        int g = -1;
+        while (g < 0) {
+            QTextStream stream(stdin);
+            bool ok = false;
+            while (!ok) {
+                qDebug() << "Which generation do you want to see? ";
+                g = stream.readLine().toInt(&ok);
+            }
+
+            // we assume that we are within the experiment folder
+            QFileInfo path(QString::fromStdString(GetSimulator().GetExperimentFileName()));
+            dir = path.absoluteDir();
+            dir.cd(QString::number(g));
+            dir.setNameFilters(QStringList("kb*.dat"));
+            dir.setFilter(QDir::Files | QDir::NoSymLinks);
+
+            if (!dir.exists()) {
+                qWarning() << "There is no data for this generation!";
+                g = -1;
+                continue;
+            }
+
+            // also check population size (number of files)
+            if (dir.entryInfoList().size() != m_iPopSize) {
+                qWarning() << "The folder for this generation should have "
+                       << m_iPopSize << " files!";
+                g = -1;
+                continue;
+            }
+        }
+
+        // all is fine, let's load the LUTs of each kilobot
+        for (int kbId = 0; kbId < m_iPopSize; ++kbId) {
+            QString fn = QString("kb_%1.dat").arg(kbId);
+            loadLUTMotor(kbId, dir.absoluteFilePath(fn));
+        }
+    }
 }
 
 void CClusteringLoopFunctions::Reset()
 {
+    // make sure we reset our PRG before doing anything
+    // it ensures that all kilobots will be back to the original position
     m_pcRNG->Reset();
 
     CQuaternion orientation;
@@ -66,58 +122,61 @@ void CClusteringLoopFunctions::Reset()
     }
 }
 
-uint32_t CClusteringLoopFunctions::getBestRobotId()
+void CClusteringLoopFunctions::PostExperiment()
 {
-    int bestId = -1;
-    float bestPerf = -1.f;
-    for (uint32_t id = 0; id < m_controllers.size(); ++id) {
-        float perf = m_controllers[id]->getPerformance();
-        if (bestPerf < perf) {
-            bestPerf = perf;
-            bestId = id;
+    LOG << "Generation " << m_iCurGeneration << "\t"
+        << m_cGA->getGlobalPerformance() << std::endl;
+
+    if (!m_bReadFromFile) {
+        m_cGA->flushIndividuals(m_iCurGeneration);
+        ++m_iCurGeneration;
+
+        if (m_iCurGeneration < m_iMaxGenerations) {
+            m_cGA->prepareNextGen();
+            GetSimulator().Reset();
+
+            m_cGA->loadNextGen();
+            GetSimulator().Execute();
         }
     }
-    return bestId;
 }
 
-float CClusteringLoopFunctions::getGlobalPerformance()
+bool CClusteringLoopFunctions::loadLUTMotor(int kbId, QString absoluteFilePath)
 {
-    float ret = 0.f;
-    for (uint32_t id = 0; id < m_controllers.size(); ++id) {
-        ret += m_controllers[id]->getPerformance();
-    }
-    return ret;
-}
-
-float CClusteringLoopFunctions::getPerformance(const uint32_t id)
-{
-    if (!robotExists(id)) {
-        return 0.f;
-    }
-    return m_controllers[id]->getPerformance();
-}
-
-LUTMotor CClusteringLoopFunctions::getLUTMotor(uint32_t id)
-{
-    if (!robotExists(id)) {
-        return LUTMotor();
-    }
-    return m_controllers[id]->getLUTMotor();
-}
-
-void CClusteringLoopFunctions::setLUTMotor(uint32_t id, LUTMotor lutMotor)
-{
-    if (robotExists(id)) {
-        m_controllers[id]->setLUTMotor(lutMotor);
-    }
-}
-
-bool CClusteringLoopFunctions::robotExists(const uint32_t id)
-{
-    if (id >= m_controllers.size()) {
-        LOGERR << "The kilobot kb" << id << " does not exist!" << std::endl;
+    // read file
+    QFile file(absoluteFilePath);
+    if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
+        LOGERR << "[FATAL] Unable to open "
+               << absoluteFilePath.toStdString() << std::endl;
         return false;
     }
+
+    // load the lookup table
+    LUTMotor lutMotor;
+    QTextStream in(&file);
+    while (!in.atEnd()) {
+        QStringList values = in.readLine().split("\t");
+        bool ok1, ok2;
+        Motor m;
+        m.left = QString(values.at(0)).toDouble(&ok1);
+        m.right = QString(values.at(0)).toDouble(&ok2);
+        if (!ok1 || !ok2 || values.size() != 2) {
+            LOGERR << "[FATAL] Wrong values in " << absoluteFilePath.toStdString() << std::endl;
+            return false;
+        }
+        lutMotor.push_back(m);
+    }
+
+    // check for lut size.
+    // Must be equal to what we have in the .argos script
+    if (lutMotor.size() != m_controllers[kbId]->getLUTSize()) {
+        LOGERR << "[FATAL] Acconding to the XML file, the LUT size for " << absoluteFilePath.toStdString()
+               << "should be " << m_controllers[0]->getLUTSize() << std::endl;
+        return false;
+    }
+
+    // all is fine, setting the lookup table
+    m_controllers[kbId]->setLUTMotor(lutMotor);
     return true;
 }
 

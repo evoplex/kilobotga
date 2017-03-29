@@ -14,8 +14,7 @@
 CSimpleGA::CSimpleGA(std::vector<CKilobotClustering*>& ctrls, TConfigurationNode& t_node)
     : m_controllers(ctrls)
     , m_pcRNG(CRandom::CreateRNG("kilobotga"))
-    , m_iCurGeneration(0)
-    , m_bStoreData(true)
+    , m_bStoreData(false)
 {
     GetNodeAttribute(t_node, "population_size", m_iPopSize);
     GetNodeAttribute(t_node, "generations", m_iMaxGenerations);
@@ -24,29 +23,36 @@ CSimpleGA::CSimpleGA(std::vector<CKilobotClustering*>& ctrls, TConfigurationNode
     GetNodeAttribute(t_node, "crossover_rate", m_fCrossoverRate);
 
     int maxGenerations = 0;
+    bool readingFromFile = false;
     GetNodeAttribute(t_node, "generations", maxGenerations);
+    GetNodeAttribute(t_node, "read_from_file", readingFromFile);
 
     m_nextGen.reserve(m_iPopSize);
 
-    // try to create a new directory to store our results
-    m_sRelativePath = QDateTime::currentDateTime().toString();
-    QDir dir(QDir::currentPath());
-    if (!dir.mkdir(m_sRelativePath)) {
-        LOGERR << "Unable to create a directory in "
-               << dir.absolutePath().append(m_sRelativePath).toStdString()
-               << " Results will NOT be stored!" << std::endl;
-        m_bStoreData = false;
-    }
-
-    // create new folders for each generation
-    if (m_bStoreData && dir.cd(m_sRelativePath)) {
-        for (int g = 0; g < maxGenerations; ++g) {
-            dir.mkdir(QString::number(g));
+    // if we are not loading an old experiment,
+    // then we should prepare the directories
+    if (!readingFromFile) {
+        // try to create a new directory to store our results
+        m_sRelativePath = QDateTime::currentDateTime().toString("dd.MM.yy_hh.mm.ss");
+        QDir dir(QDir::currentPath());
+        if (!dir.mkdir(m_sRelativePath)) {
+            LOGERR << "Unable to create a directory in "
+                   << dir.absolutePath().append(m_sRelativePath).toStdString()
+                   << " Results will NOT be stored!" << std::endl;
         }
-        // copy the .argos file
-        t_node.GetDocument()->SaveFile(QString(m_sRelativePath + "/exp.argos").toStdString());
-        // hide visualization during evolution
-        t_node.GetDocument()->FirstChildElement()->FirstChildElement()->NextSiblingElement("visualization")->Clear();
+
+        // create new folders for each generation
+        if (m_bStoreData && dir.cd(m_sRelativePath)) {
+            for (int g = 0; g < maxGenerations; ++g) {
+                dir.mkdir(QString::number(g));
+            }
+            // copy the .argos file
+            t_node.GetDocument()->SaveFile(QString(m_sRelativePath + "/exp.argos").toStdString());
+            // hide visualization during evolution
+            t_node.GetDocument()->FirstChildElement()->FirstChildElement()->NextSiblingElement("visualization")->Clear();
+        }
+
+        m_bStoreData = true;
     }
 }
 
@@ -101,7 +107,6 @@ void CSimpleGA::loadNextGen()
     for (int kbId = 0; kbId < m_iPopSize; ++kbId) {
         m_controllers[kbId]->setLUTMotor(m_nextGen[kbId]);
     }
-    ++m_iCurGeneration;
 }
 
 int CSimpleGA::tournamentSelection()
@@ -139,14 +144,14 @@ int CSimpleGA::tournamentSelection()
     return bestPerfId;
 }
 
-void CSimpleGA::flushIndividuals() const
+void CSimpleGA::flushIndividuals(const int curGeneration) const
 {
     if (!m_bStoreData) {
         return;
     }
 
     for (int kbId = 0; kbId < m_iPopSize; ++kbId) {
-        QString path = QString("%1/%2/kb_%3.dat").arg(m_sRelativePath).arg(m_iCurGeneration).arg(kbId);
+        QString path = QString("%1/%2/kb_%3.dat").arg(m_sRelativePath).arg(curGeneration).arg(kbId);
         std::ostringstream cOSS;
         cOSS << path.toStdString();
         std::ofstream cOFS(cOSS.str().c_str(), std::ios::out | std::ios::trunc);
