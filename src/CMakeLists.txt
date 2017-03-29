@@ -17,6 +17,5 @@ include(${CMAKE_SOURCE_DIR}/cmake/ARGoSBuildChecks.cmake)
 
 # Descend into the subdirectories
 add_subdirectory(controllers)
-add_subdirectory(behaviors)
 add_subdirectory(loop_functions)
 
