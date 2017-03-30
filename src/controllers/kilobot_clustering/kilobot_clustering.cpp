@@ -82,7 +82,7 @@ void CKilobotClustering::initLUT()
 
     // first and last elements must hold the decision for MIN and MAX distance
     // i.e., [34, ... , no-signal]
-    const CRange<UInt32> speedRange(0, 1);
+    const CRange<Real> speedRange(0, 1);
     const int distInterval = round((m_kMaxDistance - m_kMinDistance) / (double)(m_iLUTSize - 2.0));
     int distance = m_kMinDistance;
 
@@ -92,7 +92,6 @@ void CKilobotClustering::initLUT()
         m.right = m_pcRNG->Uniform(speedRange);
         m_lutMotor.push_back(m);
         m_lutDistance.push_back(distance);
-        //LOG << i << distance << m.left << m.right << std::endl;
         distance += distInterval;
     }
 }
