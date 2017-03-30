@@ -156,8 +156,7 @@ bool CClusteringLoopFunctions::loadLUTMotor(const uint32_t kbId, const QString& 
     // read file
     QFile file(absoluteFilePath);
     if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
-        LOGERR << "[FATAL] Unable to open "
-               << absoluteFilePath.toStdString() << std::endl;
+        qFatal("[FATAL] Unable to open %s", qUtf8Printable(absoluteFilePath));
         return false;
     }
 
@@ -171,7 +170,7 @@ bool CClusteringLoopFunctions::loadLUTMotor(const uint32_t kbId, const QString& 
         m.left = QString(values.at(0)).toDouble(&ok1);
         m.right = QString(values.at(1)).toDouble(&ok2);
         if (!ok1 || !ok2 || values.size() != 2) {
-            LOGERR << "[FATAL] Wrong values in " << absoluteFilePath.toStdString() << std::endl;
+            qFatal("[FATAL] Wrong values in %s", qUtf8Printable(absoluteFilePath));
             return false;
         }
         lutMotor.push_back(m);
@@ -180,8 +179,8 @@ bool CClusteringLoopFunctions::loadLUTMotor(const uint32_t kbId, const QString& 
     // check for lut size.
     // Must be equal to what we have in the .argos script
     if (lutMotor.size() != m_controllers[kbId]->getLUTSize()) {
-        LOGERR << "[FATAL] Acconding to the XML file, the LUT size for " << absoluteFilePath.toStdString()
-               << "should be " << m_controllers[0]->getLUTSize() << std::endl;
+        qFatal("[FATAL] Acconding to the XML file, the LUT size for %s should be %ld",
+               qUtf8Printable(absoluteFilePath), m_controllers[0]->getLUTSize());
         return false;
     }
 
@@ -227,7 +226,7 @@ void CClusteringLoopFunctions::loadExperiment()
     // all is fine, let's load the LUTs of each kilobot
     for (uint32_t kbId = 0; kbId < m_iPopSize; ++kbId) {
         QString fn = QString("kb_%1.dat").arg(kbId);
-        loadLUTMotor(kbId, dir.absoluteFilePath(fn));
+        Q_ASSERT(loadLUTMotor(kbId, dir.absoluteFilePath(fn)));
     }
 }
 
