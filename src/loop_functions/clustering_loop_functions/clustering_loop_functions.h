@@ -50,17 +50,16 @@ private:
     CRandom::CRNG* m_pcRNG;
 
     SIMULATION_MODE m_eSimMode;
-    int m_iCurGeneration;
+    uint32_t m_iCurGeneration;
     QString m_sRelativePath;
 
     // stuff loaded from the xml script
-    int m_iPopSize;
-    int m_iMaxGenerations;
+    size_t m_iPopSize;
+    size_t m_iMaxGenerations;
     CRange<Real> m_arenaSideX;
     CRange<Real> m_arenaSideY;
 
-    bool loadLUTMotor(int kbId, QString absoluteFilePath);
-    bool robotExists(const uint32_t id);
+    bool loadLUTMotor(const uint32_t kbId, const QString& absoluteFilePath);
     void loadExperiment();
 };
 

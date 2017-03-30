@@ -13,16 +13,15 @@
 
 #define SPEED_SCALE 10
 
-CKilobotClustering::CKilobotClustering() :
-   m_pcMotors(NULL),
-   m_pcSensorOut(NULL),
-   m_pcSensorIn(NULL),
-   m_kSpeedRange(0, 1),
-   m_kMaxDistance(100),
-   m_kMinDistance(34),
-   m_iLUTSize(68),
-   m_fPerformance(0.f),
-   m_pcRNG(CRandom::CreateRNG("kilobotga"))
+CKilobotClustering::CKilobotClustering()
+    : m_pcMotors(NULL)
+    , m_pcSensorOut(NULL)
+    , m_pcSensorIn(NULL)
+    , m_kMaxDistance(100)
+    , m_kMinDistance(34)
+    , m_iLUTSize(68)
+    , m_fPerformance(0.f)
+    , m_pcRNG(CRandom::CreateRNG("kilobotga"))
 {
 }
 
@@ -36,6 +35,9 @@ void CKilobotClustering::Init(TConfigurationNode& t_node) {
     if(m_iLUTSize < 3) {
         LOGERR << "[FATAL] Invalid value for lut_size (" << m_iLUTSize << "). Should be a integer greater than 2." << std::endl;
     }
+
+    m_lutDistance.reserve(m_iLUTSize);
+    m_lutMotor.reserve(m_iLUTSize);
 
     Reset();
 }
@@ -80,13 +82,14 @@ void CKilobotClustering::initLUT()
 
     // first and last elements must hold the decision for MIN and MAX distance
     // i.e., [34, ... , no-signal]
+    const CRange<UInt32> speedRange(0, 1);
     const int distInterval = round((m_kMaxDistance - m_kMinDistance) / (double)(m_iLUTSize - 2.0));
     int distance = m_kMinDistance;
 
-    for (int i=0; i < m_iLUTSize; ++i) {
+    for (uint32_t i = 0; i < m_iLUTSize; ++i) {
         Motor m;
-        m.left = m_pcRNG->Uniform(m_kSpeedRange);
-        m.right = m_pcRNG->Uniform(m_kSpeedRange);
+        m.left = m_pcRNG->Uniform(speedRange);
+        m.right = m_pcRNG->Uniform(speedRange);
         m_lutMotor.push_back(m);
         m_lutDistance.push_back(distance);
         //LOG << i << distance << m.left << m.right << std::endl;
@@ -94,7 +97,7 @@ void CKilobotClustering::initLUT()
     }
 }
 
-int CKilobotClustering::getLUTIndex(uint8_t distance)
+size_t CKilobotClustering::getLUTIndex(uint8_t distance)
 {
     if (distance <= m_kMaxDistance) {
         for (size_t idx = 0; idx < m_lutDistance.size(); ++idx) {

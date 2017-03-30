@@ -39,9 +39,8 @@ public:
     virtual void Reset();
     virtual void Destroy() {}
 
-    inline const CRange<Real>& getSpeedRange() const { return m_kSpeedRange; }
     inline const float& getPerformance() const { return m_fPerformance; }
-    inline const int& getLUTSize() const { return m_iLUTSize; }
+    inline const size_t& getLUTSize() const { return m_iLUTSize; }
     inline const LUTMotor& getLUTMotor() const { return m_lutMotor; }
     inline void setLUTMotor(LUTMotor lutMotor) { m_lutMotor = lutMotor; }
 
@@ -52,12 +51,11 @@ private:
      CCI_KilobotCommunicationSensor* m_pcSensorIn;
 
      // constants
-     const CRange<Real> m_kSpeedRange;
      const uint8_t m_kMaxDistance;    // maximum distance from another robot in mm
      const uint8_t m_kMinDistance;    // minimum distance from another robot in mm
 
      // lookup tables
-     int m_iLUTSize;
+     size_t m_iLUTSize;
      LUTMotor m_lutMotor;
      std::vector<uint8_t> m_lutDistance;
 
@@ -71,7 +69,7 @@ private:
      void initLUT();
 
      // get a lut index from a distance (in mm)
-     int getLUTIndex(uint8_t distance);
+     size_t getLUTIndex(uint8_t distance);
 
      // calculate the local performance
      // power-law: a*(x+1)^b.

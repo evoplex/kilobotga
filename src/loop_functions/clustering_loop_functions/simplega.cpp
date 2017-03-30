@@ -31,10 +31,10 @@ void CSimpleGA::prepareNextGen()
 
     const CRange<Real> zeroOne(0, 1);
 
-    for (int i = 1; i < m_iPopSize; ++i) {
+    for (uint32_t i = 1; i < m_iPopSize; ++i) {
         // select two individuals
-        int id1 = tournamentSelection();
-        int id2 = tournamentSelection();
+        uint32_t id1 = tournamentSelection();
+        uint32_t id2 = tournamentSelection();
         // make sure they are different
         while (id1 == id2) id2 = tournamentSelection();
 
@@ -69,12 +69,12 @@ void CSimpleGA::prepareNextGen()
 
 void CSimpleGA::loadNextGen()
 {
-    for (int kbId = 0; kbId < m_iPopSize; ++kbId) {
+    for (uint32_t kbId = 0; kbId < m_iPopSize; ++kbId) {
         m_controllers[kbId]->setLUTMotor(m_nextGen[kbId]);
     }
 }
 
-int CSimpleGA::tournamentSelection()
+uint32_t CSimpleGA::tournamentSelection()
 {
     // select random ids (make sure they are different)
     std::vector<uint32_t> ids;
@@ -98,7 +98,7 @@ int CSimpleGA::tournamentSelection()
 
     // get the fittest
     float bestPerf = -1;
-    int bestPerfId = -1;
+    uint32_t bestPerfId = -1;
     for (uint32_t i = 0; i < ids.size(); ++i) {
         float perf = m_controllers[ids.at(i)]->getPerformance();
         if (perf > bestPerf) {
@@ -109,9 +109,9 @@ int CSimpleGA::tournamentSelection()
     return bestPerfId;
 }
 
-void CSimpleGA::flushIndividuals(const QString& relativePath, const int curGeneration) const
+void CSimpleGA::flushIndividuals(const QString& relativePath, const uint32_t curGeneration) const
 {
-    for (int kbId = 0; kbId < m_iPopSize; ++kbId) {
+    for (uint32_t kbId = 0; kbId < m_iPopSize; ++kbId) {
         QString path = QString("%1/%2/kb_%3.dat").arg(relativePath).arg(curGeneration).arg(kbId);
         std::ostringstream cOSS;
         cOSS << path.toStdString();
@@ -135,7 +135,7 @@ float CSimpleGA::getGlobalPerformance() const
 
 uint32_t CSimpleGA::getBestRobotId()
 {
-    int bestId = -1;
+    uint32_t bestId = -1;
     float bestPerf = -1.f;
     for (uint32_t kbId = 0; kbId < m_controllers.size(); ++kbId) {
         float perf = m_controllers[kbId]->getPerformance();

@@ -18,7 +18,7 @@ public:
 
     void prepareNextGen();
     void loadNextGen();
-    void flushIndividuals(const QString &relativePath, const int curGeneration) const;
+    void flushIndividuals(const QString &relativePath, const uint32_t curGeneration) const;
     float getGlobalPerformance() const;
 
 private:
@@ -27,15 +27,15 @@ private:
     std::vector<CKilobotClustering*> m_controllers;
     CRandom::CRNG* m_pcRNG;
 
-    int m_iPopSize;
-    int m_iTournamentSize;
+    size_t m_iPopSize;
+    size_t m_iTournamentSize;
     float m_fMutationRate;
     float m_fCrossoverRate;
 
     Population m_nextGen;
 
     uint32_t getBestRobotId();
-    int tournamentSelection();
+    uint32_t tournamentSelection();
 };
 
 #endif // SIMPLE_GA_H

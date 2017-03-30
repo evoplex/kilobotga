@@ -36,7 +36,7 @@ void CClusteringLoopFunctions::Init(TConfigurationNode& t_node)
     m_arenaSideY = CRange<Real>(-0.5, 0.5);
 
     // Create the kilobots and get a reference to their controllers
-    for (int id=0; id < m_iPopSize; ++id) {
+    for (uint32_t id = 0; id < m_iPopSize; ++id) {
         std::stringstream entityId;
         entityId << "kb" << id;
         // fcc is the controller id as set in the XML
@@ -84,9 +84,7 @@ void CClusteringLoopFunctions::Init(TConfigurationNode& t_node)
             Q_ASSERT(false);
         } else if (dir.cd(m_sRelativePath)) {
             // create new folders for each generation
-            int maxGenerations = 0;
-            GetNodeAttribute(t_node, "generations", maxGenerations);
-            for (int g = 0; g < maxGenerations; ++g) {
+            for (uint32_t g = 0; g < m_iMaxGenerations; ++g) {
                 dir.mkdir(QString::number(g));
             }
 
@@ -153,7 +151,7 @@ void CClusteringLoopFunctions::PostExperiment()
     }
 }
 
-bool CClusteringLoopFunctions::loadLUTMotor(int kbId, QString absoluteFilePath)
+bool CClusteringLoopFunctions::loadLUTMotor(const uint32_t kbId, const QString& absoluteFilePath)
 {
     // read file
     QFile file(absoluteFilePath);
@@ -218,7 +216,7 @@ void CClusteringLoopFunctions::loadExperiment()
         }
 
         // also check population size (number of files)
-        if (dir.entryInfoList().size() != m_iPopSize) {
+        if ((uint32_t) dir.entryInfoList().size() != m_iPopSize) {
             qWarning() << "The folder for this generation should have "
                    << m_iPopSize << " files!";
             m_iCurGeneration = -1;
@@ -227,7 +225,7 @@ void CClusteringLoopFunctions::loadExperiment()
     }
 
     // all is fine, let's load the LUTs of each kilobot
-    for (int kbId = 0; kbId < m_iPopSize; ++kbId) {
+    for (uint32_t kbId = 0; kbId < m_iPopSize; ++kbId) {
         QString fn = QString("kb_%1.dat").arg(kbId);
         loadLUTMotor(kbId, dir.absoluteFilePath(fn));
     }
