@@ -5,6 +5,7 @@
 #include "clustering_loop_functions.h"
 
 #include <QDebug>
+#include <QDateTime>
 #include <QDir>
 #include <QTextStream>
 #include <sstream>
@@ -12,9 +13,10 @@
 
 CClusteringLoopFunctions::CClusteringLoopFunctions()
     : m_cGA(NULL)
-    , m_eSimType(TEST_SETTINGS)
-    , m_iPopSize(10)
+    , m_eSimMode(NEW_EXPERIMENT)
     , m_iCurGeneration(0)
+    , m_iPopSize(10)
+    , m_iMaxGenerations(1)
 {
     // create and seed our prg (using xml data)
     CRandom::CreateCategory("kilobotga", GetSimulator().GetRandomSeed());
@@ -27,9 +29,9 @@ void CClusteringLoopFunctions::Init(TConfigurationNode& t_node)
     // other stuff will be retrieved by the CSimpleGA class
     GetNodeAttribute(t_node, "population_size", m_iPopSize);
     GetNodeAttribute(t_node, "generations", m_iMaxGenerations);
-    GetNodeAttribute(t_node, "simulation_type", m_eSimType);
 
     // TODO: we should get it from the XML too
+    // we need the arena size to position the kilobots
     m_arenaSideX = CRange<Real>(-0.5, 0.5);
     m_arenaSideY = CRange<Real>(-0.5, 0.5);
 
@@ -47,50 +49,59 @@ void CClusteringLoopFunctions::Init(TConfigurationNode& t_node)
     // reset everything first
     Reset();
 
-    // create the GA object
-    m_cGA = new CSimpleGA(m_controllers, t_node);
-
-    // if we're just reading from files (i.e., reproducing an old experiment),
-    // so we do not  to do any of the GA stuff, we just need to load the LUTs
-    if (m_eSimType == REPLAY_EXPERIMENT) {
-        QDir dir;
-        int g = -1;
-        while (g < 0) {
-            QTextStream stream(stdin);
-            bool ok = false;
-            while (!ok) {
-                qDebug() << "Which generation do you want to see? ";
-                g = stream.readLine().toInt(&ok);
-            }
-
-            // we assume that we are within the experiment folder
-            QFileInfo path(QString::fromStdString(GetSimulator().GetExperimentFileName()));
-            dir = path.absoluteDir();
-            dir.cd(QString::number(g));
-            dir.setNameFilters(QStringList("kb*.dat"));
-            dir.setFilter(QDir::Files | QDir::NoSymLinks);
-
-            if (!dir.exists()) {
-                qWarning() << "There is no data for this generation!";
-                g = -1;
-                continue;
-            }
-
-            // also check population size (number of files)
-            if (dir.entryInfoList().size() != m_iPopSize) {
-                qWarning() << "The folder for this generation should have "
-                       << m_iPopSize << " files!";
-                g = -1;
-                continue;
-            }
+    // find out the simulation mode
+    bool readFromFile;
+    GetNodeAttribute(t_node, "read_from_file", readFromFile);
+    if (readFromFile) {
+        // if we're reading from files (i.e., reproducing an old experiment),
+        // we need to load the LUT for each kilobot
+        m_eSimMode = READ_EXPERIMENT;
+        loadExperiment();
+        qDebug() << "\nReading from file... \n";
+    } else {
+        QTextStream stream(stdin);
+        int option = -1;
+        while (option < 0 || option > 1) {
+            qDebug() << "\nWhat do you want to do?\n"
+                     << "\t 0 : Run a new experiment (no visualization) [DEFAULT] \n"
+                     << "\t 1 : Test xml settings (visualize a single run)";
+            option = stream.readLine().toInt();
         }
 
-        // all is fine, let's load the LUTs of each kilobot
-        for (int kbId = 0; kbId < m_iPopSize; ++kbId) {
-            QString fn = QString("kb_%1.dat").arg(kbId);
-            loadLUTMotor(kbId, dir.absoluteFilePath(fn));
+        m_eSimMode = (SIMULATION_MODE) option;
+    }
+
+    // if we are loading a new experiment,
+    // then we should prepare the directories
+    if (m_eSimMode == CClusteringLoopFunctions::NEW_EXPERIMENT) {
+        // try to create a new directory to store our results
+        m_sRelativePath = QDateTime::currentDateTime().toString("dd.MM.yy_hh.mm.ss");
+        QDir dir(QDir::currentPath());
+        if (!dir.mkdir(m_sRelativePath)) {
+            LOGERR << "[FATAL] Unable to create a directory in "
+                   << dir.absolutePath().append(m_sRelativePath).toStdString()
+                   << " Results will NOT be stored!" << std::endl;
+            Q_ASSERT(false);
+        } else if (dir.cd(m_sRelativePath)) {
+            // create new folders for each generation
+            int maxGenerations = 0;
+            GetNodeAttribute(t_node, "generations", maxGenerations);
+            for (int g = 0; g < maxGenerations; ++g) {
+                dir.mkdir(QString::number(g));
+            }
+
+            // copy the .argos file
+            SetNodeAttribute(t_node, "read_from_file", "true");
+            t_node.GetDocument()->SaveFile(QString(m_sRelativePath + "/exp.argos").toStdString());
+            SetNodeAttribute(t_node, "read_from_file", "false");
+
+            // hide visualization during evolution
+            t_node.GetDocument()->FirstChildElement()->FirstChildElement()->NextSiblingElement("visualization")->Clear();
         }
     }
+
+    // create the GA object
+    m_cGA = new CSimpleGA(m_controllers, t_node);
 }
 
 void CClusteringLoopFunctions::Reset()
@@ -128,8 +139,8 @@ void CClusteringLoopFunctions::PostExperiment()
     LOG << "Generation " << m_iCurGeneration << "\t"
         << m_cGA->getGlobalPerformance() << std::endl;
 
-    if (!m_bReadFromFile) {
-        m_cGA->flushIndividuals(m_iCurGeneration);
+    if (m_eSimMode == NEW_EXPERIMENT) {
+        m_cGA->flushIndividuals(m_sRelativePath, m_iCurGeneration);
         ++m_iCurGeneration;
 
         if (m_iCurGeneration < m_iMaxGenerations) {
@@ -160,7 +171,7 @@ bool CClusteringLoopFunctions::loadLUTMotor(int kbId, QString absoluteFilePath)
         bool ok1, ok2;
         Motor m;
         m.left = QString(values.at(0)).toDouble(&ok1);
-        m.right = QString(values.at(0)).toDouble(&ok2);
+        m.right = QString(values.at(1)).toDouble(&ok2);
         if (!ok1 || !ok2 || values.size() != 2) {
             LOGERR << "[FATAL] Wrong values in " << absoluteFilePath.toStdString() << std::endl;
             return false;
@@ -179,6 +190,47 @@ bool CClusteringLoopFunctions::loadLUTMotor(int kbId, QString absoluteFilePath)
     // all is fine, setting the lookup table
     m_controllers[kbId]->setLUTMotor(lutMotor);
     return true;
+}
+
+void CClusteringLoopFunctions::loadExperiment()
+{
+    QDir dir;
+    m_iCurGeneration = -1;
+    while (m_iCurGeneration < 0) {
+        QTextStream stream(stdin);
+        bool ok = false;
+        while (!ok) {
+            qDebug() << "\nWhich generation do you want to see? ";
+            m_iCurGeneration = stream.readLine().toInt(&ok);
+        }
+
+        // we assume that we are within the experiment folder
+        QFileInfo path(QString::fromStdString(GetSimulator().GetExperimentFileName()));
+        dir = path.absoluteDir();
+        dir.cd(QString::number(m_iCurGeneration));
+        dir.setNameFilters(QStringList("kb*.dat"));
+        dir.setFilter(QDir::Files | QDir::NoSymLinks);
+
+        if (!dir.exists()) {
+            qWarning() << "There is no data for this generation!";
+            m_iCurGeneration = -1;
+            continue;
+        }
+
+        // also check population size (number of files)
+        if (dir.entryInfoList().size() != m_iPopSize) {
+            qWarning() << "The folder for this generation should have "
+                   << m_iPopSize << " files!";
+            m_iCurGeneration = -1;
+            continue;
+        }
+    }
+
+    // all is fine, let's load the LUTs of each kilobot
+    for (int kbId = 0; kbId < m_iPopSize; ++kbId) {
+        QString fn = QString("kb_%1.dat").arg(kbId);
+        loadLUTMotor(kbId, dir.absoluteFilePath(fn));
+    }
 }
 
 

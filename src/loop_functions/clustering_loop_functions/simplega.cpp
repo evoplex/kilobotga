@@ -7,54 +7,18 @@
 #include <argos3/core/utility/logging/argos_log.h>
 #include <argos3/core/utility/configuration/tinyxml/ticpp.h>
 
-#include <QDateTime>
-#include <QDir>
 #include <fstream>
 
 CSimpleGA::CSimpleGA(std::vector<CKilobotClustering*>& ctrls, TConfigurationNode& t_node)
     : m_controllers(ctrls)
     , m_pcRNG(CRandom::CreateRNG("kilobotga"))
-    , m_bStoreData(false)
 {
     GetNodeAttribute(t_node, "population_size", m_iPopSize);
-    GetNodeAttribute(t_node, "generations", m_iMaxGenerations);
     GetNodeAttribute(t_node, "tournament_size", m_iTournamentSize);
     GetNodeAttribute(t_node, "mutation_rate", m_fMutationRate);
     GetNodeAttribute(t_node, "crossover_rate", m_fCrossoverRate);
-    GetNodeAttribute(t_node, "simulation_type", m_eSimType);
-
-    int maxGenerations = 0;
-    GetNodeAttribute(t_node, "generations", maxGenerations);
 
     m_nextGen.reserve(m_iPopSize);
-
-    // if we are loading a new experiment,
-    // then we should prepare the directories
-    if (m_eSimType == NEW_EXPERIMENT) {
-        // try to create a new directory to store our results
-        m_sRelativePath = QDateTime::currentDateTime().toString("dd.MM.yy_hh.mm.ss");
-        QDir dir(QDir::currentPath());
-        if (!dir.mkdir(m_sRelativePath)) {
-            LOGERR << "Unable to create a directory in "
-                   << dir.absolutePath().append(m_sRelativePath).toStdString()
-                   << " Results will NOT be stored!" << std::endl;
-        } else if (dir.cd(m_sRelativePath)) {
-            // create new folders for each generation
-            for (int g = 0; g < maxGenerations; ++g) {
-                dir.mkdir(QString::number(g));
-            }
-
-            // copy the .argos file
-            SetNodeAttribute(t_node, "read_from_file", "true");
-            t_node.GetDocument()->SaveFile(QString(m_sRelativePath + "/exp.argos").toStdString());
-            SetNodeAttribute(t_node, "read_from_file", "false");
-
-            // hide visualization during evolution
-            t_node.GetDocument()->FirstChildElement()->FirstChildElement()->NextSiblingElement("visualization")->Clear();
-
-            m_bStoreData = true;
-        }
-    }
 }
 
 void CSimpleGA::prepareNextGen()
@@ -145,14 +109,10 @@ int CSimpleGA::tournamentSelection()
     return bestPerfId;
 }
 
-void CSimpleGA::flushIndividuals(const int curGeneration) const
+void CSimpleGA::flushIndividuals(const QString& relativePath, const int curGeneration) const
 {
-    if (!m_bStoreData) {
-        return;
-    }
-
     for (int kbId = 0; kbId < m_iPopSize; ++kbId) {
-        QString path = QString("%1/%2/kb_%3.dat").arg(m_sRelativePath).arg(curGeneration).arg(kbId);
+        QString path = QString("%1/%2/kb_%3.dat").arg(relativePath).arg(curGeneration).arg(kbId);
         std::ostringstream cOSS;
         cOSS << path.toStdString();
         std::ofstream cOFS(cOSS.str().c_str(), std::ios::out | std::ios::trunc);
