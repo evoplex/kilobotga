@@ -59,7 +59,7 @@ private:
     CRange<Real> m_arenaSideX;
     CRange<Real> m_arenaSideY;
 
-    bool loadLUTMotor(const uint32_t kbId, const QString& absoluteFilePath);
+    void loadLUTMotor(const uint32_t kbId, const QString& absoluteFilePath);
     void loadExperiment();
 };
 

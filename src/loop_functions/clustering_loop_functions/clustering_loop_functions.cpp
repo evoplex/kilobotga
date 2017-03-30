@@ -151,13 +151,12 @@ void CClusteringLoopFunctions::PostExperiment()
     }
 }
 
-bool CClusteringLoopFunctions::loadLUTMotor(const uint32_t kbId, const QString& absoluteFilePath)
+void CClusteringLoopFunctions::loadLUTMotor(const uint32_t kbId, const QString& absoluteFilePath)
 {
     // read file
     QFile file(absoluteFilePath);
     if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
         qFatal("[FATAL] Unable to open %s", qUtf8Printable(absoluteFilePath));
-        return false;
     }
 
     // load the lookup table
@@ -170,8 +169,7 @@ bool CClusteringLoopFunctions::loadLUTMotor(const uint32_t kbId, const QString& 
         m.left = QString(values.at(0)).toDouble(&ok1);
         m.right = QString(values.at(1)).toDouble(&ok2);
         if (!ok1 || !ok2 || values.size() != 2) {
-            qFatal("[FATAL] Wrong values in %s", qUtf8Printable(absoluteFilePath));
-            return false;
+            qFatal("\n[FATAL] Wrong values in %s", qUtf8Printable(absoluteFilePath));
         }
         lutMotor.push_back(m);
     }
@@ -179,54 +177,42 @@ bool CClusteringLoopFunctions::loadLUTMotor(const uint32_t kbId, const QString& 
     // check for lut size.
     // Must be equal to what we have in the .argos script
     if (lutMotor.size() != m_controllers[kbId]->getLUTSize()) {
-        qFatal("[FATAL] Acconding to the XML file, the LUT size for %s should be %ld",
+        qFatal("\n[FATAL] Acconding to the XML file, the LUT size for %s should be %ld",
                qUtf8Printable(absoluteFilePath), m_controllers[0]->getLUTSize());
-        return false;
     }
 
     // all is fine, setting the lookup table
     m_controllers[kbId]->setLUTMotor(lutMotor);
-    return true;
 }
 
 void CClusteringLoopFunctions::loadExperiment()
 {
-    QDir dir;
-    m_iCurGeneration = -1;
-    while (m_iCurGeneration < 0) {
-        QTextStream stream(stdin);
-        bool ok = false;
-        while (!ok) {
-            qDebug() << "\nWhich generation do you want to see? ";
-            m_iCurGeneration = stream.readLine().toInt(&ok);
-        }
+    QTextStream stream(stdin);
+    bool ok = false;
+    while (!ok) {
+        qDebug() << "\nWhich generation do you want to see? ";
+        m_iCurGeneration = stream.readLine().toInt(&ok);
+    }
 
-        // we assume that we are within the experiment folder
-        QFileInfo path(QString::fromStdString(GetSimulator().GetExperimentFileName()));
-        dir = path.absoluteDir();
-        dir.cd(QString::number(m_iCurGeneration));
-        dir.setNameFilters(QStringList("kb*.dat"));
-        dir.setFilter(QDir::Files | QDir::NoSymLinks);
+    // we assume that we are within the experiment folder
+    QFileInfo path(QString::fromStdString(GetSimulator().GetExperimentFileName()));
+    QDir dir = path.absoluteDir();
+    if (!dir.cd(QString::number(m_iCurGeneration))) {
+        qFatal("\n[FATAL] There is no data for this generation!\n%s\n", qUtf8Printable(dir.absolutePath()));
+    }
 
-        if (!dir.exists()) {
-            qWarning() << "There is no data for this generation!";
-            m_iCurGeneration = -1;
-            continue;
-        }
-
-        // also check population size (number of files)
-        if ((uint32_t) dir.entryInfoList().size() != m_iPopSize) {
-            qWarning() << "The folder for this generation should have "
-                   << m_iPopSize << " files!";
-            m_iCurGeneration = -1;
-            continue;
-        }
+    // also check population size (number of files)
+    dir.setNameFilters(QStringList("kb*.dat"));
+    dir.setFilter(QDir::Files | QDir::NoSymLinks);
+    if ((uint32_t) dir.entryInfoList().size() != m_iPopSize) {
+        qFatal("\n[FATAL] The folder for this generation should have %ld files!\n%s\n",
+               m_iPopSize, qUtf8Printable(dir.absolutePath()));
     }
 
     // all is fine, let's load the LUTs of each kilobot
     for (uint32_t kbId = 0; kbId < m_iPopSize; ++kbId) {
         QString fn = QString("kb_%1.dat").arg(kbId);
-        Q_ASSERT(loadLUTMotor(kbId, dir.absoluteFilePath(fn)));
+        loadLUTMotor(kbId, dir.absoluteFilePath(fn));
     }
 }
 
