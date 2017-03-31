@@ -71,17 +71,15 @@ void CClusteringLoopFunctions::Init(TConfigurationNode& t_node)
         m_eSimMode = (SIMULATION_MODE) option;
     }
 
-    // if we are loading a new experiment,
+    // if we are running a new experiment,
     // then we should prepare the directories
-    if (m_eSimMode == CClusteringLoopFunctions::NEW_EXPERIMENT) {
+    if (m_eSimMode == NEW_EXPERIMENT) {
         // try to create a new directory to store our results
         m_sRelativePath = QDateTime::currentDateTime().toString("dd.MM.yy_hh.mm.ss");
         QDir dir(QDir::currentPath());
         if (!dir.mkdir(m_sRelativePath)) {
-            LOGERR << "[FATAL] Unable to create a directory in "
-                   << dir.absolutePath().append(m_sRelativePath).toStdString()
-                   << " Results will NOT be stored!" << std::endl;
-            Q_ASSERT(false);
+            qFatal("\n[FATAL] Unable to create a directory in %s\nResults will NOT be stored!\n",
+                   qUtf8Printable(dir.absolutePath().append(m_sRelativePath)));
         } else if (dir.cd(m_sRelativePath)) {
             // create new folders for each generation
             for (uint32_t g = 0; g < m_iMaxGenerations; ++g) {
@@ -194,7 +192,6 @@ void CClusteringLoopFunctions::loadExperiment()
         m_iCurGeneration = stream.readLine().toInt(&ok);
     }
 
-    // we assume that we are within the experiment folder
     QFileInfo path(QString::fromStdString(GetSimulator().GetExperimentFileName()));
     QDir dir = path.absoluteDir();
     if (!dir.cd(QString::number(m_iCurGeneration))) {
