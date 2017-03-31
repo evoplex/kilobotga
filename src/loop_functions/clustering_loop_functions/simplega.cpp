@@ -57,10 +57,10 @@ void CSimpleGA::prepareNextGen()
         if (m_fMutationRate > 0.f) {
             for (uint32_t i = 0; i < children.size(); ++i) {
                 if (m_pcRNG->Uniform(zeroOne) <= m_fMutationRate) {
-                    Motor motor;
-                    motor.left = m_pcRNG->Uniform(zeroOne);
-                    motor.right = m_pcRNG->Uniform(zeroOne);
-                    children[i] = motor;
+                    Motor m;
+                    m.left = QString::number(m_pcRNG->Uniform(zeroOne),'g', SPEED_PRECISION).toDouble();
+                    m.right = QString::number(m_pcRNG->Uniform(zeroOne), 'g', SPEED_PRECISION).toDouble();
+                    children[i] = m;
                 }
             }
         }
