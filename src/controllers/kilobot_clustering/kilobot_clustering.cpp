@@ -7,6 +7,8 @@
 #include <argos3/core/utility/configuration/argos_configuration.h>
 #include <argos3/core/utility/logging/argos_log.h>
 
+#include <QString>
+
 // parameters of our fitness function
 #define ALPHA 3 // begning of the long tail
 #define MAX_LOCAL_PERFORMANCE 20 // max score received in one interaction
@@ -88,8 +90,8 @@ void CKilobotClustering::initLUT()
 
     for (uint32_t i = 0; i < m_iLUTSize; ++i) {
         Motor m;
-        m.left = m_pcRNG->Uniform(speedRange);
-        m.right = m_pcRNG->Uniform(speedRange);
+        m.left = QString::number(m_pcRNG->Uniform(speedRange),'g', SPEED_PRECISION).toDouble();
+        m.right = QString::number(m_pcRNG->Uniform(speedRange), 'g', SPEED_PRECISION).toDouble();
         m_lutMotor.push_back(m);
         m_lutDistance.push_back(distance);
         distance += distInterval;

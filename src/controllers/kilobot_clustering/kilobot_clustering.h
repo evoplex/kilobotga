@@ -12,6 +12,7 @@
 #include <argos3/plugins/robots/kilobot/control_interface/ci_kilobot_communication_actuator.h>
 #include <argos3/plugins/robots/kilobot/control_interface/ci_kilobot_communication_sensor.h>
 
+#define SPEED_PRECISION 10
 
 using namespace argos;
 

@@ -7,7 +7,9 @@
 #include <argos3/core/utility/logging/argos_log.h>
 #include <argos3/core/utility/configuration/tinyxml/ticpp.h>
 
-#include <fstream>
+#include <QFile>
+#include <QString>
+#include <QTextStream>
 
 CSimpleGA::CSimpleGA(std::vector<CKilobotClustering*>& ctrls, TConfigurationNode& t_node)
     : m_controllers(ctrls)
@@ -113,13 +115,16 @@ void CSimpleGA::flushIndividuals(const QString& relativePath, const uint32_t cur
 {
     for (uint32_t kbId = 0; kbId < m_iPopSize; ++kbId) {
         QString path = QString("%1/%2/kb_%3.dat").arg(relativePath).arg(curGeneration).arg(kbId);
-        std::ostringstream cOSS;
-        cOSS << path.toStdString();
-        std::ofstream cOFS(cOSS.str().c_str(), std::ios::out | std::ios::trunc);
+        QFile file(path);
+        if (!file.open(QIODevice::WriteOnly | QIODevice::Text)) {
+            qFatal("[FATAL] Unable to write in %s", qUtf8Printable(path));
+        }
 
+        QTextStream out(&file);
+        out.setRealNumberPrecision(SPEED_PRECISION);
         LUTMotor lutMotor = m_controllers[kbId]->getLUTMotor();
         for (uint32_t m = 0; m < lutMotor.size(); ++m) {
-            cOFS << lutMotor[m].left << "\t" << lutMotor[m].right << std::endl;
+            out << lutMotor[m].left << "\t" << lutMotor[m].right << "\n";
         }
     }
 }
