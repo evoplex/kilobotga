@@ -2,7 +2,7 @@
  * Marcos Cardinot <mcardinot@gmail.com>
  */
 
-#include "clustering_loop_functions.h"
+#include "demo_lf.h"
 
 #include <QDebug>
 #include <QDateTime>
@@ -11,8 +11,8 @@
 #include <sstream>
 #include <vector>
 
-CClusteringLoopFunctions::CClusteringLoopFunctions()
-    : m_cGA(NULL)
+DemoLF::DemoLF()
+    : m_pGA(NULL)
     , m_eSimMode(NEW_EXPERIMENT)
     , m_iCurGeneration(0)
     , m_iPopSize(10)
@@ -23,7 +23,7 @@ CClusteringLoopFunctions::CClusteringLoopFunctions()
     m_pcRNG = CRandom::CreateRNG("kilobotga");
 }
 
-void CClusteringLoopFunctions::Init(TConfigurationNode& t_node)
+void DemoLF::Init(TConfigurationNode& t_node)
 {
     // retrieve a few settings from the '.argos' file
     // other stuff will be retrieved by the CSimpleGA class
@@ -43,7 +43,7 @@ void CClusteringLoopFunctions::Init(TConfigurationNode& t_node)
         CKilobotEntity* kilobot = new CKilobotEntity(entityId.str(), "fcc");
         AddEntity(*kilobot);
         m_entities.push_back(kilobot);
-        m_controllers.push_back(&dynamic_cast<CKilobotClustering&>(kilobot->GetControllableEntity().GetController()));
+        m_controllers.push_back(&dynamic_cast<DemoCtrl&>(kilobot->GetControllableEntity().GetController()));
     }
 
     // reset everything first
@@ -97,10 +97,10 @@ void CClusteringLoopFunctions::Init(TConfigurationNode& t_node)
     }
 
     // create the GA object
-    m_cGA = new CSimpleGA(m_controllers, t_node);
+    m_pGA = new SimpleGA(m_controllers, t_node);
 }
 
-void CClusteringLoopFunctions::Reset()
+void DemoLF::Reset()
 {
     // make sure we reset our PRG before doing anything
     // it ensures that all kilobots will be back to the original position
@@ -130,26 +130,26 @@ void CClusteringLoopFunctions::Reset()
     }
 }
 
-void CClusteringLoopFunctions::PostExperiment()
+void DemoLF::PostExperiment()
 {
     LOG << "Generation " << m_iCurGeneration << "\t"
-        << m_cGA->getGlobalPerformance() << std::endl;
+        << m_pGA->getGlobalPerformance() << std::endl;
 
     if (m_eSimMode == NEW_EXPERIMENT) {
-        m_cGA->flushIndividuals(m_sRelativePath, m_iCurGeneration);
+        m_pGA->flushIndividuals(m_sRelativePath, m_iCurGeneration);
         ++m_iCurGeneration;
 
         if (m_iCurGeneration < m_iMaxGenerations) {
-            m_cGA->prepareNextGen();
+            m_pGA->prepareNextGen();
             GetSimulator().Reset();
 
-            m_cGA->loadNextGen();
+            m_pGA->loadNextGen();
             GetSimulator().Execute();
         }
     }
 }
 
-void CClusteringLoopFunctions::loadLUTMotor(const uint32_t kbId, const QString& absoluteFilePath)
+void DemoLF::loadLUTMotor(const uint32_t kbId, const QString& absoluteFilePath)
 {
     // read file
     QFile file(absoluteFilePath);
@@ -183,7 +183,7 @@ void CClusteringLoopFunctions::loadLUTMotor(const uint32_t kbId, const QString& 
     m_controllers[kbId]->setLUTMotor(lutMotor);
 }
 
-void CClusteringLoopFunctions::loadExperiment()
+void DemoLF::loadExperiment()
 {
     QTextStream stream(stdin);
     bool ok = false;
@@ -214,4 +214,4 @@ void CClusteringLoopFunctions::loadExperiment()
 }
 
 
-REGISTER_LOOP_FUNCTIONS(CClusteringLoopFunctions, "clustering_loop_functions")
+REGISTER_LOOP_FUNCTIONS(DemoLF, "demo_loop_functions")

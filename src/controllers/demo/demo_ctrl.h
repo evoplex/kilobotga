@@ -2,8 +2,8 @@
  * Marcos Cardinot <mcardinot@gmail.com>
  */
 
-#ifndef KILOBOT_CLUSTERING_H
-#define KILOBOT_CLUSTERING_H
+#ifndef DEMO_CTRL_H
+#define DEMO_CTRL_H
 
 #include <argos3/core/control_interface/ci_controller.h>
 #include <argos3/core/utility/math/rng.h>
@@ -25,15 +25,15 @@ typedef struct {
 typedef std::vector<Motor> LUTMotor;
 
 /**
- * @brief The CKilobotClustering class
+ * @brief The DemoCtrl class
  * @author Marcos Cardinot <mcardinot@gmail.com>
  */
-class CKilobotClustering : public CCI_Controller
+class DemoCtrl : public CCI_Controller
 {
 
 public:
-    CKilobotClustering();
-    virtual ~CKilobotClustering() {}
+    DemoCtrl();
+    virtual ~DemoCtrl() {}
 
     virtual void Init(TConfigurationNode& t_node);
     virtual void ControlStep();

@@ -11,7 +11,7 @@
 #include <QString>
 #include <QTextStream>
 
-CSimpleGA::CSimpleGA(std::vector<CKilobotClustering*>& ctrls, TConfigurationNode& t_node)
+SimpleGA::SimpleGA(std::vector<DemoCtrl*>& ctrls, TConfigurationNode& t_node)
     : m_controllers(ctrls)
     , m_pcRNG(CRandom::CreateRNG("kilobotga"))
 {
@@ -23,7 +23,7 @@ CSimpleGA::CSimpleGA(std::vector<CKilobotClustering*>& ctrls, TConfigurationNode
     m_nextGen.reserve(m_iPopSize);
 }
 
-void CSimpleGA::prepareNextGen()
+void SimpleGA::prepareNextGen()
 {
     m_nextGen.clear();
 
@@ -69,14 +69,14 @@ void CSimpleGA::prepareNextGen()
     }
 }
 
-void CSimpleGA::loadNextGen()
+void SimpleGA::loadNextGen()
 {
     for (uint32_t kbId = 0; kbId < m_iPopSize; ++kbId) {
         m_controllers[kbId]->setLUTMotor(m_nextGen[kbId]);
     }
 }
 
-uint32_t CSimpleGA::tournamentSelection()
+uint32_t SimpleGA::tournamentSelection()
 {
     // select random ids (make sure they are different)
     std::vector<uint32_t> ids;
@@ -111,7 +111,7 @@ uint32_t CSimpleGA::tournamentSelection()
     return bestPerfId;
 }
 
-void CSimpleGA::flushIndividuals(const QString& relativePath, const uint32_t curGeneration) const
+void SimpleGA::flushIndividuals(const QString& relativePath, const uint32_t curGeneration) const
 {
     for (uint32_t kbId = 0; kbId < m_iPopSize; ++kbId) {
         QString path = QString("%1/%2/kb_%3.dat").arg(relativePath).arg(curGeneration).arg(kbId);
@@ -129,7 +129,7 @@ void CSimpleGA::flushIndividuals(const QString& relativePath, const uint32_t cur
     }
 }
 
-float CSimpleGA::getGlobalPerformance() const
+float SimpleGA::getGlobalPerformance() const
 {
     float ret = 0.f;
     for (uint32_t kbId = 0; kbId < m_controllers.size(); ++kbId) {
@@ -138,7 +138,7 @@ float CSimpleGA::getGlobalPerformance() const
     return ret;
 }
 
-uint32_t CSimpleGA::getBestRobotId()
+uint32_t SimpleGA::getBestRobotId()
 {
     uint32_t bestId = -1;
     float bestPerf = -1.f;

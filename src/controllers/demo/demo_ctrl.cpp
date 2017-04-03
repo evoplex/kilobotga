@@ -2,7 +2,7 @@
  * Marcos Cardinot <mcardinot@gmail.com>
  */
 
-#include "kilobot_clustering.h"
+#include "demo_ctrl.h"
 
 #include <argos3/core/utility/configuration/argos_configuration.h>
 #include <argos3/core/utility/logging/argos_log.h>
@@ -15,7 +15,7 @@
 
 #define SPEED_SCALE 10
 
-CKilobotClustering::CKilobotClustering()
+DemoCtrl::DemoCtrl()
     : m_pcMotors(NULL)
     , m_pcSensorOut(NULL)
     , m_pcSensorIn(NULL)
@@ -27,7 +27,7 @@ CKilobotClustering::CKilobotClustering()
 {
 }
 
-void CKilobotClustering::Init(TConfigurationNode& t_node) {
+void DemoCtrl::Init(TConfigurationNode& t_node) {
     m_pcMotors = GetActuator<CCI_DifferentialSteeringActuator>("differential_steering");
     m_pcSensorOut = GetActuator<CCI_KilobotCommunicationActuator>("kilobot_communication");
     m_pcSensorIn = GetSensor<CCI_KilobotCommunicationSensor>("kilobot_communication");
@@ -44,12 +44,12 @@ void CKilobotClustering::Init(TConfigurationNode& t_node) {
     Reset();
 }
 
-void CKilobotClustering::Reset() {
+void DemoCtrl::Reset() {
     initLUT();
     m_fPerformance = 0.f;
 }
 
-void CKilobotClustering::ControlStep()
+void DemoCtrl::ControlStep()
 {
     // send an empty message
     m_pcSensorOut->SetMessage(NULL);
@@ -77,7 +77,7 @@ void CKilobotClustering::ControlStep()
     m_pcMotors->SetLinearVelocity(m.left * SPEED_SCALE, m.right * SPEED_SCALE);
 }
 
-void CKilobotClustering::initLUT()
+void DemoCtrl::initLUT()
 {
     m_lutDistance.clear();
     m_lutMotor.clear();
@@ -98,7 +98,7 @@ void CKilobotClustering::initLUT()
     }
 }
 
-size_t CKilobotClustering::getLUTIndex(uint8_t distance)
+size_t DemoCtrl::getLUTIndex(uint8_t distance)
 {
     if (distance <= m_kMaxDistance) {
         for (size_t idx = 0; idx < m_lutDistance.size(); ++idx) {
@@ -109,11 +109,11 @@ size_t CKilobotClustering::getLUTIndex(uint8_t distance)
     return m_lutDistance.size() - 1; // use last as default
 }
 
-float CKilobotClustering::calcPerformance(uint8_t distance)
+float DemoCtrl::calcPerformance(uint8_t distance)
 {
     float x = distance + 1.f; // distance might be 0, so let's sum 1
     return MAX_LOCAL_PERFORMANCE * pow(x, -ALPHA);
 }
 
 
-REGISTER_CONTROLLER(CKilobotClustering, "kilobot_clustering_controller")
+REGISTER_CONTROLLER(DemoCtrl, "kilobot_demo_controller")

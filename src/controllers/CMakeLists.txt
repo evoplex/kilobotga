@@ -1,3 +1,3 @@
 include_directories(${CMAKE_SOURCE_DIR}/controllers)
 
-add_subdirectory(kilobot_clustering)
+add_subdirectory(demo)

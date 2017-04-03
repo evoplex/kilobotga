@@ -14,7 +14,7 @@
   <!-- *************** -->
   <controllers>
 
-    <kilobot_clustering_controller id="fcc" library="build/controllers/kilobot_clustering/libkilobot_clustering">
+    <kilobot_demo_controller id="fcc" library="build/controllers/demo/libdemo_ctrl">
       <actuators>
         <differential_steering implementation="default" />
         <kilobot_communication implementation="default" />
@@ -23,15 +23,15 @@
          <kilobot_communication implementation="default" show_rays="true" medium="kilomedium" />
       </sensors>
       <params lut_size="22" />
-    </kilobot_clustering_controller>
+    </kilobot_demo_controller>
 
   </controllers>
 
   <!-- ****************** -->
   <!-- * Loop functions * -->
   <!-- ****************** -->
-  <loop_functions library="build/loop_functions/clustering_loop_functions/libclustering_loop_functions"
-                  label="clustering_loop_functions"
+  <loop_functions library="build/loop_functions/demo/libdemo_lf"
+                  label="demo_loop_functions"
                   population_size="50"
                   generations="10"
                   tournament_size="2"

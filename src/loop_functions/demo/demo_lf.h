@@ -2,30 +2,29 @@
  * Marcos Cardinot <mcardinot@gmail.com>
  */
 
-#ifndef CLUSTERING_LOOP_FUNCTIONS_H
-#define CLUSTERING_LOOP_FUNCTIONS_H
+#ifndef DEMO_LOOP_FUNCTIONS_H
+#define DEMO_LOOP_FUNCTIONS_H
 
 #include <argos3/core/simulator/loop_functions.h>
 #include <argos3/core/utility/math/rng.h>
-
 #include <argos3/plugins/robots/kilobot/simulator/kilobot_entity.h>
-#include <controllers/kilobot_clustering/kilobot_clustering.h>
 
+#include "controllers/demo/demo_ctrl.h"
 #include "simplega.h"
 
 #include <QString>
 
-class CSimpleGA;
+class SimpleGA;
 
 /**
- * @brief The CClusteringLoopFunctions class
+ * @brief The DemoLF class
  * @author Marcos Cardinot <mcardinot@gmail.com>
  */
-class CClusteringLoopFunctions : public CLoopFunctions {
+class DemoLF : public CLoopFunctions {
 
 public:
-    CClusteringLoopFunctions();
-    virtual ~CClusteringLoopFunctions() {}
+    DemoLF();
+    virtual ~DemoLF() {}
 
     virtual void Init(TConfigurationNode& t_node);
     virtual void Reset();
@@ -45,8 +44,8 @@ private:
     };
 
     std::vector<CKilobotEntity*> m_entities;
-    std::vector<CKilobotClustering*> m_controllers;
-    CSimpleGA* m_cGA;
+    std::vector<DemoCtrl*> m_controllers;
+    SimpleGA* m_pGA;
     CRandom::CRNG* m_pcRNG;
 
     SIMULATION_MODE m_eSimMode;

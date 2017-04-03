@@ -5,16 +5,16 @@
 #ifndef SIMPLE_GA_H
 #define SIMPLE_GA_H
 
-#include <controllers/kilobot_clustering/kilobot_clustering.h>
-#include <loop_functions/clustering_loop_functions/clustering_loop_functions.h>
+#include "controllers/demo/demo_ctrl.h"
+#include "loop_functions/demo/demo_lf.h"
 
 #include <QString>
 
-class CSimpleGA
+class SimpleGA
 {
 
 public:
-    CSimpleGA(std::vector<CKilobotClustering *> &ctrls, TConfigurationNode &t_node);
+    SimpleGA(std::vector<DemoCtrl*> &ctrls, TConfigurationNode &t_node);
 
     void prepareNextGen();
     void loadNextGen();
@@ -24,7 +24,7 @@ public:
 private:
     typedef std::vector<LUTMotor> Population;
 
-    std::vector<CKilobotClustering*> m_controllers;
+    std::vector<DemoCtrl*> m_controllers;
     CRandom::CRNG* m_pcRNG;
 
     size_t m_iPopSize;
