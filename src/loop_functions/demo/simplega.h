@@ -45,7 +45,7 @@ private:
     std::vector<DemoCtrl*> m_controllers;
     CRandom::CRNG* m_pcRNG;
 
-    size_t m_iPopSize;
+    const size_t m_iPopSize;
     size_t m_iTournamentSize;
     float m_fMutationRate;
     float m_fCrossoverRate;

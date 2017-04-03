@@ -28,8 +28,8 @@
 SimpleGA::SimpleGA(std::vector<DemoCtrl*>& ctrls, TConfigurationNode& t_node)
     : m_controllers(ctrls)
     , m_pcRNG(CRandom::CreateRNG("kilobotga"))
+    , m_iPopSize(ctrls.size())
 {
-    GetNodeAttribute(t_node, "population_size", m_iPopSize);
     GetNodeAttribute(t_node, "tournament_size", m_iTournamentSize);
     GetNodeAttribute(t_node, "mutation_rate", m_fMutationRate);
     GetNodeAttribute(t_node, "crossover_rate", m_fCrossoverRate);
@@ -146,7 +146,7 @@ void SimpleGA::flushIndividuals(const QString& relativePath, const uint32_t curG
 float SimpleGA::getGlobalPerformance() const
 {
     float ret = 0.f;
-    for (uint32_t kbId = 0; kbId < m_controllers.size(); ++kbId) {
+    for (uint32_t kbId = 0; kbId < m_iPopSize; ++kbId) {
         ret += m_controllers[kbId]->getPerformance();
     }
     return ret;
@@ -156,7 +156,7 @@ uint32_t SimpleGA::getBestRobotId()
 {
     uint32_t bestId = -1;
     float bestPerf = -1.f;
-    for (uint32_t kbId = 0; kbId < m_controllers.size(); ++kbId) {
+    for (uint32_t kbId = 0; kbId < m_iPopSize; ++kbId) {
         float perf = m_controllers[kbId]->getPerformance();
         if (bestPerf < perf) {
             bestPerf = perf;
