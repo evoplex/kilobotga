@@ -19,8 +19,8 @@
 #ifndef SIMPLE_GA_H
 #define SIMPLE_GA_H
 
-#include "controllers/demo/demo_ctrl.h"
-#include "loop_functions/demo/demo_lf.h"
+#include "controllers/demo_ctrl.h"
+#include "loop_functions/demo_lf.h"
 
 #include <QString>
 

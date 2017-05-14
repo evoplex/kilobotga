@@ -23,7 +23,7 @@
 #include <argos3/core/utility/math/rng.h>
 #include <argos3/plugins/robots/kilobot/simulator/kilobot_entity.h>
 
-#include "controllers/demo/demo_ctrl.h"
+#include "controllers/demo_ctrl.h"
 #include "simplega.h"
 
 #include <QString>

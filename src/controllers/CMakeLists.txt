@@ -1,3 +1,10 @@
-include_directories(${CMAKE_SOURCE_DIR}/controllers)
+add_library(kga_controllers SHARED
+    demo_ctrl.h
+    demo_ctrl.cpp
+)
 
-add_subdirectory(demo)
+target_link_libraries(kga_controllers
+    argos3core_simulator
+    argos3plugin_simulator_kilobot
+    argos3plugin_simulator_genericrobot
+)
