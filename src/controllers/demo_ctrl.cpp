@@ -30,21 +30,14 @@
 #define SPEED_SCALE 10
 
 DemoCtrl::DemoCtrl()
-    : m_pcMotors(NULL)
-    , m_pcSensorOut(NULL)
-    , m_pcSensorIn(NULL)
-    , m_kMaxDistance(100)
-    , m_kMinDistance(34)
-    , m_iLUTSize(68)
-    , m_fPerformance(0.f)
+    : AbstractGACtrl()
     , m_pcRNG(CRandom::CreateRNG("kilobotga"))
 {
 }
 
-void DemoCtrl::Init(TConfigurationNode& t_node) {
-    m_pcMotors = GetActuator<CCI_DifferentialSteeringActuator>("differential_steering");
-    m_pcSensorOut = GetActuator<CCI_KilobotCommunicationActuator>("kilobot_communication");
-    m_pcSensorIn = GetSensor<CCI_KilobotCommunicationSensor>("kilobot_communication");
+void DemoCtrl::Init(TConfigurationNode& t_node)
+{
+    AbstractGACtrl::Init(t_node);
 
     // parse the configuration file
     GetNodeAttributeOrDefault(t_node, "lut_size", m_iLUTSize, m_iLUTSize);
@@ -58,7 +51,8 @@ void DemoCtrl::Init(TConfigurationNode& t_node) {
     Reset();
 }
 
-void DemoCtrl::Reset() {
+void DemoCtrl::Reset()
+{
     initLUT();
     m_fPerformance = 0.f;
 }

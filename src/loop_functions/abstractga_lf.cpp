@@ -16,7 +16,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "simplega.h"
+#include "abstractga_lf.h"
 
 #include <argos3/core/utility/logging/argos_log.h>
 #include <argos3/core/utility/configuration/tinyxml/ticpp.h>
@@ -25,25 +25,65 @@
 #include <QString>
 #include <QTextStream>
 
-SimpleGA::SimpleGA(std::vector<DemoCtrl*>& ctrls, TConfigurationNode& t_node)
-    : m_controllers(ctrls)
-    , m_pcRNG(CRandom::CreateRNG("kilobotga"))
-    , m_iPopSize(ctrls.size())
+AbstractGALoopFunction::AbstractGALoopFunction()
+    : m_iPopSize(10)
+    , m_iTournamentSize(2)
+    , m_iMaxGenerations(1)
+    , m_fMutationRate(0.f)
+    , m_fCrossoverRate(0.f)
+    , m_arenaSideX(0, 0)
+    , m_arenaSideY(0, 0)
+    , m_eSimMode(NEW_EXPERIMENT)
+    , m_iCurGeneration(0)
 {
+    // create and seed our prg (using xml data)
+    CRandom::CreateCategory("kilobotga", GetSimulator().GetRandomSeed());
+    m_pcRNG = CRandom::CreateRNG("kilobotga");
+}
+
+void AbstractGALoopFunction::Init(TConfigurationNode& t_node)
+{
+    // retrieve settings from the '.argos' file
+    GetNodeAttribute(t_node, "population_size", m_iPopSize);
+    GetNodeAttribute(t_node, "generations", m_iMaxGenerations);
     GetNodeAttribute(t_node, "tournament_size", m_iTournamentSize);
     GetNodeAttribute(t_node, "mutation_rate", m_fMutationRate);
     GetNodeAttribute(t_node, "crossover_rate", m_fCrossoverRate);
 
-    m_nextGen.reserve(m_iPopSize);
+    // TODO: we should get it from the XML too
+    // we need the arena size to position the kilobots
+    m_arenaSideX = CRange<Real>(-0.5, 0.5);
+    m_arenaSideY = CRange<Real>(-0.5, 0.5);
+
+    m_nextGeneration.reserve(m_iPopSize);
 }
 
-void SimpleGA::prepareNextGen()
+void AbstractGALoopFunction::PostExperiment()
 {
-    m_nextGen.clear();
+    LOG << "Generation " << m_iCurGeneration << "\t"
+        << getGlobalPerformance() << std::endl;
+
+    if (m_eSimMode == NEW_EXPERIMENT) {
+        flushIndividuals();
+        ++m_iCurGeneration;
+
+        if (m_iCurGeneration < m_iMaxGenerations) {
+            prepareNextGen();
+            GetSimulator().Reset();
+
+            loadNextGen();
+            GetSimulator().Execute();
+        }
+    }
+}
+
+void AbstractGALoopFunction::prepareNextGen()
+{
+    m_nextGeneration.clear();
 
     // elitism: keep the best robot
     uint32_t bestId = getBestRobotId();
-    m_nextGen.push_back(m_controllers[bestId]->getLUTMotor());
+    m_nextGeneration.push_back(m_controllers[bestId]->getLUTMotor());
 
     const CRange<Real> zeroOne(0, 1);
 
@@ -79,18 +119,18 @@ void SimpleGA::prepareNextGen()
             }
         }
 
-        m_nextGen.push_back(children);
+        m_nextGeneration.push_back(children);
     }
 }
 
-void SimpleGA::loadNextGen()
+void AbstractGALoopFunction::loadNextGen()
 {
     for (uint32_t kbId = 0; kbId < m_iPopSize; ++kbId) {
-        m_controllers[kbId]->setLUTMotor(m_nextGen[kbId]);
+        m_controllers[kbId]->setLUTMotor(m_nextGeneration[kbId]);
     }
 }
 
-uint32_t SimpleGA::tournamentSelection()
+uint32_t AbstractGALoopFunction::tournamentSelection()
 {
     // select random ids (make sure they are different)
     std::vector<uint32_t> ids;
@@ -125,10 +165,15 @@ uint32_t SimpleGA::tournamentSelection()
     return bestPerfId;
 }
 
-void SimpleGA::flushIndividuals(const QString& relativePath, const uint32_t curGeneration) const
+void AbstractGALoopFunction::flushIndividuals() const
 {
+    if (m_sRelativePath.isEmpty()) {
+        qFatal("[FATAL] Unable to write! Directory was not defined!");
+        return;
+    }
+
     for (uint32_t kbId = 0; kbId < m_iPopSize; ++kbId) {
-        QString path = QString("%1/%2/kb_%3.dat").arg(relativePath).arg(curGeneration).arg(kbId);
+        QString path = QString("%1/%2/kb_%3.dat").arg(m_sRelativePath).arg(m_iCurGeneration).arg(kbId);
         QFile file(path);
         if (!file.open(QIODevice::WriteOnly | QIODevice::Text)) {
             qFatal("[FATAL] Unable to write in %s", qUtf8Printable(path));
@@ -143,7 +188,7 @@ void SimpleGA::flushIndividuals(const QString& relativePath, const uint32_t curG
     }
 }
 
-float SimpleGA::getGlobalPerformance() const
+float AbstractGALoopFunction::getGlobalPerformance() const
 {
     float ret = 0.f;
     for (uint32_t kbId = 0; kbId < m_iPopSize; ++kbId) {
@@ -152,7 +197,7 @@ float SimpleGA::getGlobalPerformance() const
     return ret;
 }
 
-uint32_t SimpleGA::getBestRobotId()
+uint32_t AbstractGALoopFunction::getBestRobotId()
 {
     uint32_t bestId = -1;
     float bestPerf = -1.f;

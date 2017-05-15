@@ -26,28 +26,14 @@
 #include <vector>
 
 DemoLF::DemoLF()
-    : m_pGA(NULL)
-    , m_eSimMode(NEW_EXPERIMENT)
-    , m_iCurGeneration(0)
-    , m_iPopSize(10)
-    , m_iMaxGenerations(1)
+    : AbstractGALoopFunction()
+    , m_pcRNG(CRandom::CreateRNG("kilobotga"))
 {
-    // create and seed our prg (using xml data)
-    CRandom::CreateCategory("kilobotga", GetSimulator().GetRandomSeed());
-    m_pcRNG = CRandom::CreateRNG("kilobotga");
 }
 
 void DemoLF::Init(TConfigurationNode& t_node)
 {
-    // retrieve a few settings from the '.argos' file
-    // other stuff will be retrieved by the CSimpleGA class
-    GetNodeAttribute(t_node, "population_size", m_iPopSize);
-    GetNodeAttribute(t_node, "generations", m_iMaxGenerations);
-
-    // TODO: we should get it from the XML too
-    // we need the arena size to position the kilobots
-    m_arenaSideX = CRange<Real>(-0.5, 0.5);
-    m_arenaSideY = CRange<Real>(-0.5, 0.5);
+    AbstractGALoopFunction::Init(t_node);
 
     // Create the kilobots and get a reference to their controllers
     for (uint32_t id = 0; id < m_iPopSize; ++id) {
@@ -109,9 +95,6 @@ void DemoLF::Init(TConfigurationNode& t_node)
             t_node.GetDocument()->FirstChildElement()->FirstChildElement()->NextSiblingElement("visualization")->Clear();
         }
     }
-
-    // create the GA object
-    m_pGA = new SimpleGA(m_controllers, t_node);
 }
 
 void DemoLF::Reset()
@@ -140,25 +123,6 @@ void DemoLF::Reset()
 
         if (!objAdded) {
             LOGERR << "Unable to move robot to <" << position << ">, <" << orientation << ">" << std::endl;
-        }
-    }
-}
-
-void DemoLF::PostExperiment()
-{
-    LOG << "Generation " << m_iCurGeneration << "\t"
-        << m_pGA->getGlobalPerformance() << std::endl;
-
-    if (m_eSimMode == NEW_EXPERIMENT) {
-        m_pGA->flushIndividuals(m_sRelativePath, m_iCurGeneration);
-        ++m_iCurGeneration;
-
-        if (m_iCurGeneration < m_iMaxGenerations) {
-            m_pGA->prepareNextGen();
-            GetSimulator().Reset();
-
-            m_pGA->loadNextGen();
-            GetSimulator().Execute();
         }
     }
 }

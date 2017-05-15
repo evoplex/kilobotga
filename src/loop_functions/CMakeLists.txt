@@ -1,8 +1,8 @@
 find_package(Qt5Core)
 
 add_library(kga_loopfunctions SHARED
-    simplega.h
-    simplega.cpp
+    abstractga_lf.h
+    abstractga_lf.cpp
     demo_lf.h
     demo_lf.cpp
 )

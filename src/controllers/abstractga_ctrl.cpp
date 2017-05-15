@@ -16,31 +16,22 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef DEMO_LOOP_FUNCTIONS_H
-#define DEMO_LOOP_FUNCTIONS_H
+#include "abstractga_ctrl.h"
 
-#include "abstractga_lf.h"
-#include "controllers/demo_ctrl.h"
-
-/**
- * @brief The DemoLF class
- * @author Marcos Cardinot <mcardinot@gmail.com>
- */
-class DemoLF : public AbstractGALoopFunction
+AbstractGACtrl::AbstractGACtrl()
+    : m_pcMotors(NULL)
+    , m_pcSensorOut(NULL)
+    , m_pcSensorIn(NULL)
+    , m_kMaxDistance(100)
+    , m_kMinDistance(34)
+    , m_fPerformance(0.f)
+    , m_iLUTSize(68)
 {
+}
 
-public:
-    DemoLF();
-    virtual ~DemoLF() {}
-
-    virtual void Init(TConfigurationNode& t_node);
-    virtual void Reset();
-
-private:
-    CRandom::CRNG* m_pcRNG;
-
-    void loadLUTMotor(const uint32_t kbId, const QString& absoluteFilePath);
-    void loadExperiment();
-};
-
-#endif // DEMO_LOOP_FUNCTIONS_H
+void AbstractGACtrl::Init(TConfigurationNode& t_node)
+{
+    m_pcMotors = GetActuator<argos::CCI_DifferentialSteeringActuator>("differential_steering");
+    m_pcSensorOut = GetActuator<CCI_KilobotCommunicationActuator>("kilobot_communication");
+    m_pcSensorIn = GetSensor<CCI_KilobotCommunicationSensor>("kilobot_communication");
+}
