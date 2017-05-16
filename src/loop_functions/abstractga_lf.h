@@ -27,6 +27,8 @@
 
 #include <QString>
 
+typedef std::vector<Chromosome> Population;
+
 /**
  * @brief The AbstractGALoopFunction class
  * @author Marcos Cardinot <mcardinot@gmail.com>
@@ -59,8 +61,6 @@ protected:
         READ_EXPERIMENT,
         TEST_SETTINGS
     };
-
-    typedef std::vector<LUTMotor> Population;
 
     // stuff loaded from the xml script
     size_t m_iPopSize;

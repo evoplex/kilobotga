@@ -25,7 +25,6 @@ AbstractGACtrl::AbstractGACtrl()
     , m_kMaxDistance(100)
     , m_kMinDistance(34)
     , m_fPerformance(0.f)
-    , m_iLUTSize(68)
 {
 }
 

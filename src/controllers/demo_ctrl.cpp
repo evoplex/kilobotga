@@ -32,6 +32,7 @@
 DemoCtrl::DemoCtrl()
     : AbstractGACtrl()
     , m_pcRNG(CRandom::CreateRNG("kilobotga"))
+    , m_iLUTSize(68)
 {
 }
 
@@ -42,11 +43,12 @@ void DemoCtrl::Init(TConfigurationNode& t_node)
     // parse the configuration file
     GetNodeAttributeOrDefault(t_node, "lut_size", m_iLUTSize, m_iLUTSize);
     if(m_iLUTSize < 3) {
-        LOGERR << "[FATAL] Invalid value for lut_size (" << m_iLUTSize << "). Should be a integer greater than 2." << std::endl;
+        LOGERR << "[FATAL] Invalid value for lut_size (" << m_iLUTSize
+               << "). Should be a integer greater than 2." << std::endl;
     }
 
     m_lutDistance.reserve(m_iLUTSize);
-    m_lutMotor.reserve(m_iLUTSize);
+    m_chromosome.reserve(m_iLUTSize);
 
     Reset();
 }
@@ -81,14 +83,25 @@ void DemoCtrl::ControlStep()
     }
 
     // update speed
-    const Motor m = m_lutMotor[getLUTIndex(distance)];
+    const MotorSpeed m = m_chromosome[getLUTIndex(distance)];
     m_pcMotors->SetLinearVelocity(m.left * SPEED_SCALE, m.right * SPEED_SCALE);
+}
+
+bool DemoCtrl::setChromosome(Chromosome chromosome)
+{
+    // check for lut size. Must be equal to what we have in the .argos script
+    if (chromosome.size() != m_iLUTSize) {
+        qFatal("\n[FATAL] Acconding to the XML file, the LUT size should be %ld", m_iLUTSize);
+        return false;
+    }
+    m_chromosome = chromosome;
+    return true;
 }
 
 void DemoCtrl::initLUT()
 {
     m_lutDistance.clear();
-    m_lutMotor.clear();
+    m_chromosome.clear();
 
     // first and last elements must hold the decision for MIN and MAX distance
     // i.e., [34, ... , no-signal]
@@ -97,16 +110,16 @@ void DemoCtrl::initLUT()
     int distance = m_kMinDistance;
 
     for (uint32_t i = 0; i < m_iLUTSize; ++i) {
-        Motor m;
+        MotorSpeed m;
         m.left = QString::number(m_pcRNG->Uniform(speedRange),'g', SPEED_PRECISION).toDouble();
         m.right = QString::number(m_pcRNG->Uniform(speedRange), 'g', SPEED_PRECISION).toDouble();
-        m_lutMotor.push_back(m);
+        m_chromosome.push_back(m);
         m_lutDistance.push_back(distance);
         distance += distInterval;
     }
 }
 
-size_t DemoCtrl::getLUTIndex(uint8_t distance)
+size_t DemoCtrl::getLUTIndex(uint8_t distance) const
 {
     if (distance <= m_kMaxDistance) {
         for (size_t idx = 0; idx < m_lutDistance.size(); ++idx) {
@@ -117,11 +130,10 @@ size_t DemoCtrl::getLUTIndex(uint8_t distance)
     return m_lutDistance.size() - 1; // use last as default
 }
 
-float DemoCtrl::calcPerformance(uint8_t distance)
+float DemoCtrl::calcPerformance(uint8_t distance) const
 {
     float x = distance + 1.f; // distance might be 0, so let's sum 1
     return MAX_LOCAL_PERFORMANCE * pow(x, -ALPHA);
 }
-
 
 REGISTER_CONTROLLER(DemoCtrl, "kilobot_demo_controller")

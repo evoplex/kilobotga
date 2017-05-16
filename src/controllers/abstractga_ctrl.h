@@ -31,9 +31,9 @@ using namespace argos;
 typedef struct {
    Real left;
    Real right;
-} Motor;
+} MotorSpeed;
 
-typedef std::vector<Motor> LUTMotor;
+typedef std::vector<MotorSpeed> Chromosome;
 
 #define SPEED_PRECISION 10
 
@@ -53,28 +53,24 @@ public:
     virtual void Reset() {}
     virtual void Destroy() {}
 
+    inline const Chromosome& getChromosome() const { return m_chromosome; }
     inline const float& getPerformance() const { return m_fPerformance; }
-    inline const size_t& getLUTSize() const { return m_iLUTSize; }
-    inline const LUTMotor& getLUTMotor() const { return m_lutMotor; }
-    inline void setLUTMotor(LUTMotor lutMotor) { m_lutMotor = lutMotor; }
+    // return false if chromosome is not suitable
+    virtual bool setChromosome(Chromosome chromosome);
 
 protected:
-     // actuators and sensors
-     CCI_DifferentialSteeringActuator* m_pcMotors;
-     CCI_KilobotCommunicationActuator* m_pcSensorOut;
-     CCI_KilobotCommunicationSensor* m_pcSensorIn;
+    // actuators and sensors
+    CCI_DifferentialSteeringActuator* m_pcMotors;
+    CCI_KilobotCommunicationActuator* m_pcSensorOut;
+    CCI_KilobotCommunicationSensor* m_pcSensorIn;
 
-     // constants
-     const uint8_t m_kMaxDistance;    // maximum distance from another robot in mm
-     const uint8_t m_kMinDistance;    // minimum distance from another robot in mm
+    // constants
+    const uint8_t m_kMaxDistance;    // maximum distance from another robot in mm
+    const uint8_t m_kMinDistance;    // minimum distance from another robot in mm
 
-     // behavioural state
-     float m_fPerformance; // global performance of this kilobot
-
-     // lookup tables
-     size_t m_iLUTSize;
-     LUTMotor m_lutMotor;
-     std::vector<uint8_t> m_lutDistance;
+    // genetic algorithm stuff
+    float m_fPerformance; // global performance of this kilobot
+    Chromosome m_chromosome;
 };
 
 #endif // ABSTRACTGA_CTRL_H

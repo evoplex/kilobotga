@@ -83,7 +83,7 @@ void AbstractGALoopFunction::prepareNextGen()
 
     // elitism: keep the best robot
     uint32_t bestId = getBestRobotId();
-    m_nextGeneration.push_back(m_controllers[bestId]->getLUTMotor());
+    m_nextGeneration.push_back(m_controllers[bestId]->getChromosome());
 
     const CRange<Real> zeroOne(0, 1);
 
@@ -94,15 +94,15 @@ void AbstractGALoopFunction::prepareNextGen()
         // make sure they are different
         while (id1 == id2) id2 = tournamentSelection();
 
-        LUTMotor lutMotor1 = m_controllers[id1]->getLUTMotor();
-        LUTMotor lutMotor2 = m_controllers[id2]->getLUTMotor();
-        LUTMotor children = lutMotor1;
+        Chromosome chromosome1 = m_controllers[id1]->getChromosome();
+        Chromosome chromosome2 = m_controllers[id2]->getChromosome();
+        Chromosome children = chromosome1;
 
         // crossover
         if (m_fCrossoverRate > 0.f) {
-            for (uint32_t i = 0; i < lutMotor1.size(); ++i) {
+            for (uint32_t i = 0; i < chromosome1.size(); ++i) {
                 if (m_pcRNG->Uniform(zeroOne) <= m_fCrossoverRate) {
-                    children[i] = lutMotor2[i];
+                    children[i] = chromosome2[i];
                 }
             }
         }
@@ -111,7 +111,7 @@ void AbstractGALoopFunction::prepareNextGen()
         if (m_fMutationRate > 0.f) {
             for (uint32_t i = 0; i < children.size(); ++i) {
                 if (m_pcRNG->Uniform(zeroOne) <= m_fMutationRate) {
-                    Motor m;
+                    MotorSpeed m;
                     m.left = QString::number(m_pcRNG->Uniform(zeroOne),'g', SPEED_PRECISION).toDouble();
                     m.right = QString::number(m_pcRNG->Uniform(zeroOne), 'g', SPEED_PRECISION).toDouble();
                     children[i] = m;
@@ -126,7 +126,7 @@ void AbstractGALoopFunction::prepareNextGen()
 void AbstractGALoopFunction::loadNextGen()
 {
     for (uint32_t kbId = 0; kbId < m_iPopSize; ++kbId) {
-        m_controllers[kbId]->setLUTMotor(m_nextGeneration[kbId]);
+        m_controllers[kbId]->setChromosome(m_nextGeneration[kbId]);
     }
 }
 
@@ -181,9 +181,9 @@ void AbstractGALoopFunction::flushIndividuals() const
 
         QTextStream out(&file);
         out.setRealNumberPrecision(SPEED_PRECISION);
-        LUTMotor lutMotor = m_controllers[kbId]->getLUTMotor();
-        for (uint32_t m = 0; m < lutMotor.size(); ++m) {
-            out << lutMotor[m].left << "\t" << lutMotor[m].right << "\n";
+        Chromosome chromosome = m_controllers[kbId]->getChromosome();
+        for (uint32_t m = 0; m < chromosome.size(); ++m) {
+            out << chromosome[m].left << "\t" << chromosome[m].right << "\n";
         }
     }
 }

@@ -136,29 +136,25 @@ void DemoLF::loadLUTMotor(const uint32_t kbId, const QString& absoluteFilePath)
     }
 
     // load the lookup table
-    LUTMotor lutMotor;
+    Chromosome chromosome;
     QTextStream in(&file);
     while (!in.atEnd()) {
         QStringList values = in.readLine().split("\t");
         bool ok1, ok2;
-        Motor m;
+        MotorSpeed m;
         m.left = QString(values.at(0)).toDouble(&ok1);
         m.right = QString(values.at(1)).toDouble(&ok2);
         if (!ok1 || !ok2 || values.size() != 2) {
             qFatal("\n[FATAL] Wrong values in %s", qUtf8Printable(absoluteFilePath));
         }
-        lutMotor.push_back(m);
-    }
-
-    // check for lut size.
-    // Must be equal to what we have in the .argos script
-    if (lutMotor.size() != m_controllers[kbId]->getLUTSize()) {
-        qFatal("\n[FATAL] Acconding to the XML file, the LUT size for %s should be %ld",
-               qUtf8Printable(absoluteFilePath), m_controllers[0]->getLUTSize());
+        chromosome.push_back(m);
     }
 
     // all is fine, setting the lookup table
-    m_controllers[kbId]->setLUTMotor(lutMotor);
+    if (m_controllers[kbId]->setChromosome(chromosome)) {
+        // something went wrong; print filepath
+        qFatal(qUtf8Printable(absoluteFilePath));
+    }
 }
 
 void DemoLF::loadExperiment()

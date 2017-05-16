@@ -32,24 +32,27 @@ public:
     DemoCtrl();
     virtual ~DemoCtrl() {}
 
+    virtual bool setChromosome(Chromosome chromosome);
+
     // CCI_Controller stuff
     virtual void Init(TConfigurationNode& t_node);
     virtual void ControlStep();
     virtual void Reset();
 
 private:
-     // other stuff
      CRandom::CRNG*  m_pcRNG; // random number generator
+     size_t m_iLUTSize; // lookup table size; it'll define the chromossome size
+     std::vector<uint8_t> m_lutDistance; // range distances for each gene
 
      // initialize our lookup tables with random values
      void initLUT();
 
      // get a lut index from a distance (in mm)
-     size_t getLUTIndex(uint8_t distance);
+     size_t getLUTIndex(uint8_t distance) const;
 
      // calculate the local performance
      // power-law: a*(x+1)^b.
-     float calcPerformance(uint8_t distance);
+     float calcPerformance(uint8_t distance) const;
 };
 
 #endif // DEMO_CTRL_H
