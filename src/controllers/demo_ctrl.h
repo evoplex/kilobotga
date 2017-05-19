@@ -32,6 +32,10 @@ public:
     DemoCtrl();
     virtual ~DemoCtrl() {}
 
+    // generate a random gene (motor speed)
+    virtual Gene randGene() const;
+
+    // set chromosome (vector of motor speeds)
     virtual bool setChromosome(Chromosome chromosome);
 
     // CCI_Controller stuff

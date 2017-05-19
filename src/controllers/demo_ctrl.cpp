@@ -87,6 +87,15 @@ void DemoCtrl::ControlStep()
     m_pcMotors->SetLinearVelocity(m.left * SPEED_SCALE, m.right * SPEED_SCALE);
 }
 
+Gene DemoCtrl::randGene() const
+{
+    const CRange<Real> speedRange(0, 1);
+    MotorSpeed m;
+    m.left = QString::number(m_pcRNG->Uniform(speedRange),'g', SPEED_PRECISION).toDouble();
+    m.right = QString::number(m_pcRNG->Uniform(speedRange), 'g', SPEED_PRECISION).toDouble();
+    return m;
+}
+
 bool DemoCtrl::setChromosome(Chromosome chromosome)
 {
     // check for lut size. Must be equal to what we have in the .argos script
@@ -105,15 +114,11 @@ void DemoCtrl::initLUT()
 
     // first and last elements must hold the decision for MIN and MAX distance
     // i.e., [34, ... , no-signal]
-    const CRange<Real> speedRange(0, 1);
     const int distInterval = round((m_kMaxDistance - m_kMinDistance) / (double)(m_iLUTSize - 2.0));
     int distance = m_kMinDistance;
 
     for (uint32_t i = 0; i < m_iLUTSize; ++i) {
-        MotorSpeed m;
-        m.left = QString::number(m_pcRNG->Uniform(speedRange),'g', SPEED_PRECISION).toDouble();
-        m.right = QString::number(m_pcRNG->Uniform(speedRange), 'g', SPEED_PRECISION).toDouble();
-        m_chromosome.push_back(m);
+        m_chromosome.push_back(randGene());
         m_lutDistance.push_back(distance);
         distance += distInterval;
     }

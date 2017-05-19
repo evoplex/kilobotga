@@ -33,7 +33,8 @@ typedef struct {
    Real right;
 } MotorSpeed;
 
-typedef std::vector<MotorSpeed> Chromosome;
+typedef MotorSpeed Gene;
+typedef std::vector<Gene> Chromosome;
 
 #define SPEED_PRECISION 10
 
@@ -48,15 +49,19 @@ public:
     AbstractGACtrl();
     virtual ~AbstractGACtrl() {}
 
-    virtual void Init(TConfigurationNode& t_node);
-    virtual void ControlStep() {}
-    virtual void Reset() {}
-    virtual void Destroy() {}
+    // return false if chromosome is not suitable
+    virtual bool setChromosome(Chromosome chromosome) = 0;
+
+    // generate a random gene
+    virtual Gene randGene() const = 0;
 
     inline const Chromosome& getChromosome() const { return m_chromosome; }
     inline const float& getPerformance() const { return m_fPerformance; }
-    // return false if chromosome is not suitable
-    virtual bool setChromosome(Chromosome chromosome);
+
+    // CCI_Controler stuff
+    virtual void Init(TConfigurationNode& t_node);
+    virtual void ControlStep() {}
+    virtual void Reset() {}
 
 protected:
     // actuators and sensors

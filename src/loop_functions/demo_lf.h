@@ -33,14 +33,14 @@ public:
     DemoLF();
     virtual ~DemoLF() {}
 
-    virtual void Init(TConfigurationNode& t_node);
     virtual void Reset();
 
 private:
     CRandom::CRNG* m_pcRNG;
 
-    void loadLUTMotor(const uint32_t kbId, const QString& absoluteFilePath);
-    void loadExperiment();
+    virtual void flushGeneration() const;
+    virtual void loadExperiment();
+    void loadLUTMotor(const uint32_t kbId, const QString& absoluteFilePath) const;
 };
 
 #endif // DEMO_LOOP_FUNCTIONS_H

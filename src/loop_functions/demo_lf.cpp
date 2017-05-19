@@ -19,82 +19,14 @@
 #include "demo_lf.h"
 
 #include <QDebug>
-#include <QDateTime>
 #include <QDir>
+#include <QFile>
 #include <QTextStream>
-#include <sstream>
-#include <vector>
 
 DemoLF::DemoLF()
     : AbstractGALoopFunction()
     , m_pcRNG(CRandom::CreateRNG("kilobotga"))
 {
-}
-
-void DemoLF::Init(TConfigurationNode& t_node)
-{
-    AbstractGALoopFunction::Init(t_node);
-
-    // Create the kilobots and get a reference to their controllers
-    for (uint32_t id = 0; id < m_iPopSize; ++id) {
-        std::stringstream entityId;
-        entityId << "kb" << id;
-        // fcc is the controller id as set in the XML
-        CKilobotEntity* kilobot = new CKilobotEntity(entityId.str(), "fcc");
-        AddEntity(*kilobot);
-        m_entities.push_back(kilobot);
-        m_controllers.push_back(&dynamic_cast<DemoCtrl&>(kilobot->GetControllableEntity().GetController()));
-    }
-
-    // reset everything first
-    Reset();
-
-    // find out the simulation mode
-    bool readFromFile;
-    GetNodeAttribute(t_node, "read_from_file", readFromFile);
-    if (readFromFile) {
-        // if we're reading from files (i.e., reproducing an old experiment),
-        // we need to load the LUT for each kilobot
-        m_eSimMode = READ_EXPERIMENT;
-        loadExperiment();
-        qDebug() << "\nReading from file... \n";
-    } else {
-        QTextStream stream(stdin);
-        int option = -1;
-        while (option < 0 || option > 1) {
-            qDebug() << "\nWhat do you want to do?\n"
-                     << "\t 0 : Run a new experiment (no visualization) [DEFAULT] \n"
-                     << "\t 1 : Test xml settings (visualize a single run)";
-            option = stream.readLine().toInt();
-        }
-
-        m_eSimMode = (SIMULATION_MODE) option;
-    }
-
-    // if we are running a new experiment,
-    // then we should prepare the directories
-    if (m_eSimMode == NEW_EXPERIMENT) {
-        // try to create a new directory to store our results
-        m_sRelativePath = QDateTime::currentDateTime().toString("dd.MM.yy_hh.mm.ss");
-        QDir dir(QDir::currentPath());
-        if (!dir.mkdir(m_sRelativePath)) {
-            qFatal("\n[FATAL] Unable to create a directory in %s\nResults will NOT be stored!\n",
-                   qUtf8Printable(dir.absolutePath().append(m_sRelativePath)));
-        } else if (dir.cd(m_sRelativePath)) {
-            // create new folders for each generation
-            for (uint32_t g = 0; g < m_iMaxGenerations; ++g) {
-                dir.mkdir(QString::number(g));
-            }
-
-            // copy the .argos file
-            SetNodeAttribute(t_node, "read_from_file", "true");
-            t_node.GetDocument()->SaveFile(QString(m_sRelativePath + "/exp.argos").toStdString());
-            SetNodeAttribute(t_node, "read_from_file", "false");
-
-            // hide visualization during evolution
-            t_node.GetDocument()->FirstChildElement()->FirstChildElement()->NextSiblingElement("visualization")->Clear();
-        }
-    }
 }
 
 void DemoLF::Reset()
@@ -127,33 +59,26 @@ void DemoLF::Reset()
     }
 }
 
-void DemoLF::loadLUTMotor(const uint32_t kbId, const QString& absoluteFilePath)
+void DemoLF::flushGeneration() const
 {
-    // read file
-    QFile file(absoluteFilePath);
-    if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
-        qFatal("[FATAL] Unable to open %s", qUtf8Printable(absoluteFilePath));
+    if (m_sRelativePath.isEmpty()) {
+        qFatal("[FATAL] Unable to write! Directory was not defined!");
+        return;
     }
 
-    // load the lookup table
-    Chromosome chromosome;
-    QTextStream in(&file);
-    while (!in.atEnd()) {
-        QStringList values = in.readLine().split("\t");
-        bool ok1, ok2;
-        MotorSpeed m;
-        m.left = QString(values.at(0)).toDouble(&ok1);
-        m.right = QString(values.at(1)).toDouble(&ok2);
-        if (!ok1 || !ok2 || values.size() != 2) {
-            qFatal("\n[FATAL] Wrong values in %s", qUtf8Printable(absoluteFilePath));
+    for (uint32_t kbId = 0; kbId < m_iPopSize; ++kbId) {
+        QString path = QString("%1/%2/kb_%3.dat").arg(m_sRelativePath).arg(m_iCurGeneration).arg(kbId);
+        QFile file(path);
+        if (!file.open(QIODevice::WriteOnly | QIODevice::Text)) {
+            qFatal("[FATAL] Unable to write in %s", qUtf8Printable(path));
         }
-        chromosome.push_back(m);
-    }
 
-    // all is fine, setting the lookup table
-    if (m_controllers[kbId]->setChromosome(chromosome)) {
-        // something went wrong; print filepath
-        qFatal(qUtf8Printable(absoluteFilePath));
+        QTextStream out(&file);
+        out.setRealNumberPrecision(SPEED_PRECISION);
+        Chromosome chromosome = m_controllers[kbId]->getChromosome();
+        for (uint32_t m = 0; m < chromosome.size(); ++m) {
+            out << chromosome[m].left << "\t" << chromosome[m].right << "\n";
+        }
     }
 }
 
@@ -187,5 +112,34 @@ void DemoLF::loadExperiment()
     }
 }
 
+void DemoLF::loadLUTMotor(const uint32_t kbId, const QString& absoluteFilePath) const
+{
+    // read file
+    QFile file(absoluteFilePath);
+    if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
+        qFatal("[FATAL] Unable to open %s", qUtf8Printable(absoluteFilePath));
+    }
+
+    // load the lookup table
+    Chromosome chromosome;
+    QTextStream in(&file);
+    while (!in.atEnd()) {
+        QStringList values = in.readLine().split("\t");
+        bool ok1, ok2;
+        MotorSpeed m;
+        m.left = QString(values.at(0)).toDouble(&ok1);
+        m.right = QString(values.at(1)).toDouble(&ok2);
+        if (!ok1 || !ok2 || values.size() != 2) {
+            qFatal("\n[FATAL] Wrong values in %s", qUtf8Printable(absoluteFilePath));
+        }
+        chromosome.push_back(m);
+    }
+
+    // all is fine, setting the lookup table
+    if (m_controllers[kbId]->setChromosome(chromosome)) {
+        // something went wrong; print filepath
+        qFatal(qUtf8Printable(absoluteFilePath));
+    }
+}
 
 REGISTER_LOOP_FUNCTIONS(DemoLF, "demo_loop_functions")

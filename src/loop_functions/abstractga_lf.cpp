@@ -21,8 +21,10 @@
 #include <argos3/core/utility/logging/argos_log.h>
 #include <argos3/core/utility/configuration/tinyxml/ticpp.h>
 
+#include <QDebug>
+#include <QDateTime>
+#include <QDir>
 #include <QFile>
-#include <QString>
 #include <QTextStream>
 
 AbstractGALoopFunction::AbstractGALoopFunction()
@@ -56,6 +58,67 @@ void AbstractGALoopFunction::Init(TConfigurationNode& t_node)
     m_arenaSideY = CRange<Real>(-0.5, 0.5);
 
     m_nextGeneration.reserve(m_iPopSize);
+
+    // Create the kilobots and get a reference to their controllers
+    for (uint32_t id = 0; id < m_iPopSize; ++id) {
+        std::stringstream entityId;
+        entityId << "kb" << id;
+        // fcc is the controller id as set in the XML
+        CKilobotEntity* kilobot = new CKilobotEntity(entityId.str(), "fcc");
+        AddEntity(*kilobot);
+        m_entities.push_back(kilobot);
+        m_controllers.push_back(&dynamic_cast<AbstractGACtrl&>(kilobot->GetControllableEntity().GetController()));
+    }
+
+    // reset everything first
+    Reset();
+
+    // find out the simulation mode
+    bool readFromFile;
+    GetNodeAttribute(t_node, "read_from_file", readFromFile);
+    if (readFromFile) {
+        // if we're reading from files (i.e., reproducing an old experiment),
+        // we need to load the LUT for each kilobot
+        m_eSimMode = READ_EXPERIMENT;
+        loadExperiment();
+        qDebug() << "\nReading from file... \n";
+    } else {
+        QTextStream stream(stdin);
+        int option = -1;
+        while (option < 0 || option > 1) {
+            qDebug() << "\nWhat do you want to do?\n"
+                     << "\t 0 : Run a new experiment (no visualization) [DEFAULT] \n"
+                     << "\t 1 : Test xml settings (visualize a single run)";
+            option = stream.readLine().toInt();
+        }
+
+        m_eSimMode = (SIMULATION_MODE) option;
+    }
+
+    // if we are running a new experiment,
+    // then we should prepare the directories
+    if (m_eSimMode == NEW_EXPERIMENT) {
+        // try to create a new directory to store our results
+        m_sRelativePath = QDateTime::currentDateTime().toString("dd.MM.yy_hh.mm.ss");
+        QDir dir(QDir::currentPath());
+        if (!dir.mkdir(m_sRelativePath)) {
+            qFatal("\n[FATAL] Unable to create a directory in %s\nResults will NOT be stored!\n",
+                   qUtf8Printable(dir.absolutePath().append(m_sRelativePath)));
+        } else if (dir.cd(m_sRelativePath)) {
+            // create new folders for each generation
+            for (uint32_t g = 0; g < m_iMaxGenerations; ++g) {
+                dir.mkdir(QString::number(g));
+            }
+
+            // copy the .argos file
+            SetNodeAttribute(t_node, "read_from_file", "true");
+            t_node.GetDocument()->SaveFile(QString(m_sRelativePath + "/exp.argos").toStdString());
+            SetNodeAttribute(t_node, "read_from_file", "false");
+
+            // hide visualization during evolution
+            t_node.GetDocument()->FirstChildElement()->FirstChildElement()->NextSiblingElement("visualization")->Clear();
+        }
+    }
 }
 
 void AbstractGALoopFunction::PostExperiment()
@@ -64,20 +127,20 @@ void AbstractGALoopFunction::PostExperiment()
         << getGlobalPerformance() << std::endl;
 
     if (m_eSimMode == NEW_EXPERIMENT) {
-        flushIndividuals();
+        flushGeneration();
         ++m_iCurGeneration;
 
         if (m_iCurGeneration < m_iMaxGenerations) {
-            prepareNextGen();
+            prepareNextGeneration();
             GetSimulator().Reset();
 
-            loadNextGen();
+            loadNextGeneration();
             GetSimulator().Execute();
         }
     }
 }
 
-void AbstractGALoopFunction::prepareNextGen()
+void AbstractGALoopFunction::prepareNextGeneration()
 {
     m_nextGeneration.clear();
 
@@ -111,10 +174,7 @@ void AbstractGALoopFunction::prepareNextGen()
         if (m_fMutationRate > 0.f) {
             for (uint32_t i = 0; i < children.size(); ++i) {
                 if (m_pcRNG->Uniform(zeroOne) <= m_fMutationRate) {
-                    MotorSpeed m;
-                    m.left = QString::number(m_pcRNG->Uniform(zeroOne),'g', SPEED_PRECISION).toDouble();
-                    m.right = QString::number(m_pcRNG->Uniform(zeroOne), 'g', SPEED_PRECISION).toDouble();
-                    children[i] = m;
+                    children[i] = m_controllers[id1]->randGene();
                 }
             }
         }
@@ -123,14 +183,14 @@ void AbstractGALoopFunction::prepareNextGen()
     }
 }
 
-void AbstractGALoopFunction::loadNextGen()
+void AbstractGALoopFunction::loadNextGeneration()
 {
     for (uint32_t kbId = 0; kbId < m_iPopSize; ++kbId) {
         m_controllers[kbId]->setChromosome(m_nextGeneration[kbId]);
     }
 }
 
-uint32_t AbstractGALoopFunction::tournamentSelection()
+uint32_t AbstractGALoopFunction::tournamentSelection() const
 {
     // select random ids (make sure they are different)
     std::vector<uint32_t> ids;
@@ -165,29 +225,6 @@ uint32_t AbstractGALoopFunction::tournamentSelection()
     return bestPerfId;
 }
 
-void AbstractGALoopFunction::flushIndividuals() const
-{
-    if (m_sRelativePath.isEmpty()) {
-        qFatal("[FATAL] Unable to write! Directory was not defined!");
-        return;
-    }
-
-    for (uint32_t kbId = 0; kbId < m_iPopSize; ++kbId) {
-        QString path = QString("%1/%2/kb_%3.dat").arg(m_sRelativePath).arg(m_iCurGeneration).arg(kbId);
-        QFile file(path);
-        if (!file.open(QIODevice::WriteOnly | QIODevice::Text)) {
-            qFatal("[FATAL] Unable to write in %s", qUtf8Printable(path));
-        }
-
-        QTextStream out(&file);
-        out.setRealNumberPrecision(SPEED_PRECISION);
-        Chromosome chromosome = m_controllers[kbId]->getChromosome();
-        for (uint32_t m = 0; m < chromosome.size(); ++m) {
-            out << chromosome[m].left << "\t" << chromosome[m].right << "\n";
-        }
-    }
-}
-
 float AbstractGALoopFunction::getGlobalPerformance() const
 {
     float ret = 0.f;
@@ -197,7 +234,7 @@ float AbstractGALoopFunction::getGlobalPerformance() const
     return ret;
 }
 
-uint32_t AbstractGALoopFunction::getBestRobotId()
+uint32_t AbstractGALoopFunction::getBestRobotId() const
 {
     uint32_t bestId = -1;
     float bestPerf = -1.f;

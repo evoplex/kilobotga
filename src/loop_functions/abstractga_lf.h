@@ -40,11 +40,6 @@ public:
     AbstractGALoopFunction();
     virtual ~AbstractGALoopFunction() {}
 
-    void prepareNextGen();
-    void loadNextGen();
-    float getGlobalPerformance() const;
-
-    // CLoopFunctions stuff
     virtual void Init(TConfigurationNode& t_node);
     virtual void Reset() {}
     virtual void PostExperiment();
@@ -82,9 +77,14 @@ protected:
 private:
     CRandom::CRNG* m_pcRNG;
 
-    void flushIndividuals() const;
-    uint32_t getBestRobotId();
-    uint32_t tournamentSelection();
+    virtual void loadExperiment();
+    virtual void flushGeneration() const;
+
+    void prepareNextGeneration();
+    void loadNextGeneration();
+    float getGlobalPerformance() const;
+    uint32_t getBestRobotId() const;
+    uint32_t tournamentSelection() const;
 };
 
 #endif // ABSTRACTGA_LOOPFUNCTION_H
