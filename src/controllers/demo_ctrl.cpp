@@ -83,17 +83,17 @@ void DemoCtrl::ControlStep()
     }
 
     // update speed
-    const MotorSpeed m = m_chromosome[getLUTIndex(distance)];
+    const MotorSpeed m = m_chromosome[getLUTIndex(distance)].value<MotorSpeed>();
     m_pcMotors->SetLinearVelocity(m.left * SPEED_SCALE, m.right * SPEED_SCALE);
 }
 
-Gene DemoCtrl::randGene() const
+QVariant DemoCtrl::randGene() const
 {
     const CRange<Real> speedRange(0, 1);
     MotorSpeed m;
     m.left = QString::number(m_pcRNG->Uniform(speedRange),'g', SPEED_PRECISION).toDouble();
     m.right = QString::number(m_pcRNG->Uniform(speedRange), 'g', SPEED_PRECISION).toDouble();
-    return m;
+    return QVariant::fromValue(m);
 }
 
 bool DemoCtrl::setChromosome(Chromosome chromosome)

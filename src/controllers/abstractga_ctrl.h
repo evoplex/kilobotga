@@ -25,18 +25,20 @@
 #include <argos3/plugins/robots/kilobot/control_interface/ci_kilobot_communication_actuator.h>
 #include <argos3/plugins/robots/kilobot/control_interface/ci_kilobot_communication_sensor.h>
 
+#include <QVariant>
+
 using namespace argos;
 
+#define SPEED_PRECISION 10
+
 // Motor speed [0, 1)
-typedef struct {
+struct MotorSpeed {
    Real left;
    Real right;
-} MotorSpeed;
+};
+Q_DECLARE_METATYPE(MotorSpeed)
 
-typedef MotorSpeed Gene;
-typedef std::vector<Gene> Chromosome;
-
-#define SPEED_PRECISION 10
+typedef std::vector<QVariant> Chromosome;
 
 /**
  * @brief The AbstractGACtrl class
@@ -53,7 +55,7 @@ public:
     virtual bool setChromosome(Chromosome chromosome) = 0;
 
     // generate a random gene
-    virtual Gene randGene() const = 0;
+    virtual QVariant randGene() const = 0;
 
     inline const Chromosome& getChromosome() const { return m_chromosome; }
     inline const float& getPerformance() const { return m_fPerformance; }

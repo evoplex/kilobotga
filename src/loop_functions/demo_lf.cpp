@@ -76,8 +76,10 @@ void DemoLF::flushGeneration() const
         QTextStream out(&file);
         out.setRealNumberPrecision(SPEED_PRECISION);
         Chromosome chromosome = m_controllers[kbId]->getChromosome();
+
         for (uint32_t m = 0; m < chromosome.size(); ++m) {
-            out << chromosome[m].left << "\t" << chromosome[m].right << "\n";
+            MotorSpeed motorSpeed = chromosome[m].value<MotorSpeed>();
+            out << motorSpeed.left << "\t" << motorSpeed.right << "\n";
         }
     }
 }
@@ -132,7 +134,7 @@ void DemoLF::loadLUTMotor(const uint32_t kbId, const QString& absoluteFilePath) 
         if (!ok1 || !ok2 || values.size() != 2) {
             qFatal("\n[FATAL] Wrong values in %s", qUtf8Printable(absoluteFilePath));
         }
-        chromosome.push_back(m);
+        chromosome.push_back(QVariant::fromValue(m));
     }
 
     // all is fine, setting the lookup table

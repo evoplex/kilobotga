@@ -33,7 +33,7 @@ public:
     virtual ~DemoCtrl() {}
 
     // generate a random gene (motor speed)
-    virtual Gene randGene() const;
+    virtual QVariant randGene() const;
 
     // set chromosome (vector of motor speeds)
     virtual bool setChromosome(Chromosome chromosome);
