@@ -34,3 +34,8 @@ void AbstractGACtrl::Init(TConfigurationNode& t_node)
     m_pcSensorOut = GetActuator<CCI_KilobotCommunicationActuator>("kilobot_communication");
     m_pcSensorIn = GetSensor<CCI_KilobotCommunicationSensor>("kilobot_communication");
 }
+
+void AbstractGACtrl::Reset()
+{
+    m_fPerformance = 0.f;
+}

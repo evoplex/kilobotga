@@ -63,7 +63,7 @@ public:
     // CCI_Controler stuff
     virtual void Init(TConfigurationNode& t_node);
     virtual void ControlStep() {}
-    virtual void Reset() {}
+    virtual void Reset();
 
 protected:
     // actuators and sensors
