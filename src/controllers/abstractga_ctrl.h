@@ -24,11 +24,17 @@
 #include <argos3/plugins/robots/generic/control_interface/ci_differential_steering_actuator.h>
 #include <argos3/plugins/robots/kilobot/control_interface/ci_kilobot_communication_actuator.h>
 #include <argos3/plugins/robots/kilobot/control_interface/ci_kilobot_communication_sensor.h>
+#include <argos3/plugins/robots/generic/control_interface/ci_leds_actuator.h>
 
 #include <QVariant>
 
 using namespace argos;
 
+// speed is always a real number between 0 and 1 scaled by this constant
+#define SPEED_SCALE 10
+
+// we use this constant to avoid any propagation of uncertainty
+// when reading/writting numbers from a file for example.
 #define SPEED_PRECISION 10
 
 // Motor speed [0, 1)
@@ -70,6 +76,7 @@ protected:
     CCI_DifferentialSteeringActuator* m_pcMotors;
     CCI_KilobotCommunicationActuator* m_pcSensorOut;
     CCI_KilobotCommunicationSensor* m_pcSensorIn;
+    CCI_LEDsActuator* m_pcLED;
 
     // constants
     const uint8_t m_kMaxDistance;    // maximum distance from another robot in mm

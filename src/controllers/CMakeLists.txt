@@ -3,6 +3,8 @@ add_library(kga_controllers SHARED
     abstractga_ctrl.cpp
     demo_ctrl.h
     demo_ctrl.cpp
+    pd_ctrl.h
+    pd_ctrl.cpp
 )
 
 target_link_libraries(kga_controllers

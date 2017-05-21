@@ -16,27 +16,30 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "abstractga_ctrl.h"
+#ifndef PD_LOOP_FUNCTIONS_H
+#define PD_LOOP_FUNCTIONS_H
 
-AbstractGACtrl::AbstractGACtrl()
-    : m_pcMotors(NULL)
-    , m_pcSensorOut(NULL)
-    , m_pcSensorIn(NULL)
-    , m_kMaxDistance(100)
-    , m_kMinDistance(34)
-    , m_fPerformance(0.f)
-{
-}
+#include "abstractga_lf.h"
+#include "controllers/pd_ctrl.h"
 
-void AbstractGACtrl::Init(TConfigurationNode& t_node)
+/**
+ * @brief The PDLF class
+ * @author Marcos Cardinot <mcardinot@gmail.com>
+ */
+class PDLF : public AbstractGALoopFunction
 {
-    m_pcMotors = GetActuator<argos::CCI_DifferentialSteeringActuator>("differential_steering");
-    m_pcSensorOut = GetActuator<CCI_KilobotCommunicationActuator>("kilobot_communication");
-    m_pcSensorIn = GetSensor<CCI_KilobotCommunicationSensor>("kilobot_communication");
-    m_pcLED = GetActuator<CCI_LEDsActuator>("leds");
-}
 
-void AbstractGACtrl::Reset()
-{
-    m_fPerformance = 0.f;
-}
+public:
+    PDLF();
+    virtual ~PDLF() {}
+
+    virtual void Reset();
+
+private:
+    CRandom::CRNG* m_pcRNG;
+
+    virtual void flushGeneration() const;
+    virtual void loadExperiment();
+};
+
+#endif // PD_LOOP_FUNCTIONS_H

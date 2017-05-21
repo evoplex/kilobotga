@@ -16,27 +16,38 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#ifndef PD_CTRL_H
+#define PD_CTRL_H
+
 #include "abstractga_ctrl.h"
 
-AbstractGACtrl::AbstractGACtrl()
-    : m_pcMotors(NULL)
-    , m_pcSensorOut(NULL)
-    , m_pcSensorIn(NULL)
-    , m_kMaxDistance(100)
-    , m_kMinDistance(34)
-    , m_fPerformance(0.f)
+/**
+ * @brief The PDCtrl class.
+ * Prisoner's Dilemma game
+ * @author Marcos Cardinot <mcardinot@gmail.com>
+ */
+class PDCtrl : public AbstractGACtrl
 {
-}
 
-void AbstractGACtrl::Init(TConfigurationNode& t_node)
-{
-    m_pcMotors = GetActuator<argos::CCI_DifferentialSteeringActuator>("differential_steering");
-    m_pcSensorOut = GetActuator<CCI_KilobotCommunicationActuator>("kilobot_communication");
-    m_pcSensorIn = GetSensor<CCI_KilobotCommunicationSensor>("kilobot_communication");
-    m_pcLED = GetActuator<CCI_LEDsActuator>("leds");
-}
+public:
+    PDCtrl();
+    virtual ~PDCtrl() {}
 
-void AbstractGACtrl::Reset()
-{
-    m_fPerformance = 0.f;
-}
+    // generate a random gene (pure game strategy)
+    virtual QVariant randGene() const;
+
+    // set chromosome (vector of motor speeds)
+    virtual bool setChromosome(Chromosome chromosome);
+
+    // CCI_Controller stuff
+    virtual void Init(TConfigurationNode& t_node);
+    virtual void ControlStep();
+
+private:
+    CRandom::CRNG*  m_pcRNG; // random number generator
+    message_t m_message;
+
+    float calcPerformance(uint8_t sA, uint8_t sB);
+};
+
+#endif // PD_CTRL_H

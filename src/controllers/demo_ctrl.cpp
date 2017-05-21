@@ -27,8 +27,6 @@
 #define ALPHA 3 // begning of the long tail
 #define MAX_LOCAL_PERFORMANCE 20 // max score received in one interaction
 
-#define SPEED_SCALE 10
-
 DemoCtrl::DemoCtrl()
     : AbstractGACtrl()
     , m_pcRNG(CRandom::CreateRNG("kilobotga"))

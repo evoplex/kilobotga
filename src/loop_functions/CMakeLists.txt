@@ -5,6 +5,8 @@ add_library(kga_loopfunctions SHARED
     abstractga_lf.cpp
     demo_lf.h
     demo_lf.cpp
+    pd_lf.h
+    pd_lf.cpp
 )
 
 target_link_libraries(kga_loopfunctions
