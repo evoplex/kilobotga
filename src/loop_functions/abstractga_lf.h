@@ -41,7 +41,6 @@ public:
     virtual ~AbstractGALoopFunction() {}
 
     virtual void Init(TConfigurationNode& t_node);
-    virtual void Reset() {}
     virtual void PostExperiment();
 
 protected:
@@ -77,8 +76,8 @@ protected:
 private:
     CRandom::CRNG* m_pcRNG;
 
-    virtual void loadExperiment();
-    virtual void flushGeneration() const;
+    virtual void loadExperiment() = 0;
+    virtual void flushGeneration() const = 0;
 
     void prepareNextGeneration();
     void loadNextGeneration();

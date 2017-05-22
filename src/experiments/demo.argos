@@ -14,10 +14,11 @@
   <!-- *************** -->
   <controllers>
 
-    <kilobot_demo_controller id="fcc" library="build/controllers/demo/libdemo_ctrl">
+    <kilobot_demo_controller id="fcc" library="build/controllers/libkga_controllers">
       <actuators>
         <differential_steering implementation="default" />
         <kilobot_communication implementation="default" />
+        <leds implementation="default" medium="leds" />
       </actuators>
       <sensors>
          <kilobot_communication implementation="default" show_rays="true" medium="kilomedium" />
@@ -30,7 +31,7 @@
   <!-- ****************** -->
   <!-- * Loop functions * -->
   <!-- ****************** -->
-  <loop_functions library="build/loop_functions/demo/libdemo_lf"
+  <loop_functions library="build/loop_functions/libkga_loopfunctions"
                   label="demo_loop_functions"
                   population_size="50"
                   generations="10"
