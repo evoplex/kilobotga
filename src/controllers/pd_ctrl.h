@@ -40,6 +40,8 @@ public:
     virtual bool setChromosome(Chromosome chromosome);
 
     // CCI_Controller stuff
+    virtual void Init(TConfigurationNode &t_node);
+    virtual void Reset();
     virtual void ControlStep();
 
 private:
