@@ -27,6 +27,7 @@ PDCtrl::PDCtrl()
     : AbstractGACtrl()
     , m_pcRNG(CRandom::CreateRNG("kilobotga"))
 {
+    Reset();
 }
 
 void PDCtrl::Init(TConfigurationNode &t_node)
@@ -39,11 +40,12 @@ void PDCtrl::Reset()
 {
     AbstractGACtrl::Reset();
 
-    // pure game strategy, i.e., 0 (cooperate) or 1 (defect)
-    m_chromosome.clear();
-    m_chromosome.reserve(1);
-    m_chromosome.push_back(randGene());
-    m_message.data[0] = (uint8_t) m_chromosome[0].toInt();
+    // pure game strategy,
+    // i.e., 0 (cooperate), 1 (defect) or 2 (abstain)
+    Chromosome chromosome;
+    chromosome.reserve(1);
+    chromosome.push_back(randGene());
+    setChromosome(chromosome);
 }
 
 void PDCtrl::ControlStep()
@@ -57,8 +59,8 @@ void PDCtrl::ControlStep()
     // for each signal received, accumulate the payoff
     // obtained through the game interaction
     for (uint32_t i = 0; i < in.size(); ++i) {
-        uint8_t strategy = in[i].Message->data[0];
-        m_fPerformance += calcPerformance(m_chromosome[0].toInt(), strategy); // update performance
+        uint8_t strategyB = in[i].Message->data[0];
+        m_fPerformance += calcPerformance(m_curStrategy, strategyB); // update performance
     }
 
     // update speed
@@ -67,12 +69,13 @@ void PDCtrl::ControlStep()
                                   m_pcRNG->Uniform(speedRange) * SPEED_SCALE);
 
     // led color
-    m_pcLED->SetAllColors(m_chromosome[0].toInt() ? CColor::RED : CColor::BLUE);
+    m_pcLED->SetAllColors(m_curColor);
 }
 
 QVariant PDCtrl::randGene() const
 {
-    int strategy = m_pcRNG->Bernoulli(); // 0 (C) or 1 (D)
+    // pure strategy: 0 (C), 1 (D) or 2 (A)
+    int strategy = m_pcRNG->Uniform(CRange<UInt32>(0, 2));
     return QVariant::fromValue(strategy);
 }
 
@@ -83,13 +86,34 @@ bool PDCtrl::setChromosome(Chromosome chromosome)
         qFatal("\n[FATAL] Chromosome should have only one gene! (%ld)", chromosome.size());
         return false;
     }
+
     m_chromosome = chromosome;
-    m_message.data[0] = (uint8_t) chromosome[0].toInt();
+    m_curStrategy = (uint8_t) chromosome[0].toInt();
+    m_message.data[0] = m_curStrategy;
+
+    switch (m_curStrategy) {
+    case 0: // C
+        m_curColor = CColor::BLUE;
+        break;
+    case 1: // D
+        m_curColor = CColor::RED;
+        break;
+    case 2: // A
+        m_curColor = CColor::GREEN;
+        break;
+    default:
+        m_curColor = CColor::BROWN;
+    }
+
     return true;
 }
 
 float PDCtrl::calcPerformance(uint8_t sA, uint8_t sB)
 {
+    if (sA == 2 || sB == 2) { // abstain
+        return 2;
+    }
+
     switch (sA*2+sB) {
     case 0: // CC
         return 3;
@@ -100,6 +124,7 @@ float PDCtrl::calcPerformance(uint8_t sA, uint8_t sB)
     case 3: // DD
         return 1;
     default:
+        qFatal("\n[FATAL] wrong inputs in calcPerformance(%d, %d)", sA, sB);
         return 0;
     }
 }

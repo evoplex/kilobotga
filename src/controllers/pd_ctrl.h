@@ -45,8 +45,11 @@ public:
     virtual void ControlStep();
 
 private:
-    CRandom::CRNG*  m_pcRNG; // random number generator
+    CRandom::CRNG* m_pcRNG; // random number generator
     message_t m_message;
+
+    uint8_t m_curStrategy;
+    CColor m_curColor;
 
     float calcPerformance(uint8_t sA, uint8_t sB);
 };
