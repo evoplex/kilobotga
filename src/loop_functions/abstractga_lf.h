@@ -41,6 +41,7 @@ public:
     virtual ~AbstractGALoopFunction() {}
 
     virtual void Init(TConfigurationNode& t_node);
+    virtual void Reset();
     virtual void PostExperiment();
 
 protected:

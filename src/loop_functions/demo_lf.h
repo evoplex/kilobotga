@@ -33,11 +33,7 @@ public:
     DemoLF();
     virtual ~DemoLF() {}
 
-    virtual void Reset();
-
 private:
-    CRandom::CRNG* m_pcRNG;
-
     virtual void flushGeneration() const;
     virtual void loadExperiment();
     void loadLUTMotor(const uint32_t kbId, const QString& absoluteFilePath) const;

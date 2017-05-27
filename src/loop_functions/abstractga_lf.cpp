@@ -121,6 +121,36 @@ void AbstractGALoopFunction::Init(TConfigurationNode& t_node)
     }
 }
 
+void AbstractGALoopFunction::Reset()
+{
+    // make sure we reset our PRG before doing anything
+    // it ensures that all kilobots will be back to the original position
+    m_pcRNG->Reset();
+
+    CQuaternion orientation;
+    CVector3 position;
+    const int maxPosTrial = 100;
+
+    // uniform distribution (random)
+    for (uint32_t i = 0; i < m_entities.size(); ++i) {
+        bool objAdded = false;
+        for (int posTrial = 0; posTrial < maxPosTrial; ++posTrial) {
+            CRadians zAngle = m_pcRNG->Uniform(CRadians::UNSIGNED_RANGE);
+            orientation.FromEulerAngles(zAngle, CRadians::ZERO, CRadians::ZERO); // z, y, x
+            position = CVector3(m_pcRNG->Uniform(m_arenaSideX), m_pcRNG->Uniform(m_arenaSideY), 0);
+
+            if (MoveEntity(m_entities[i]->GetEmbodiedEntity(), position, orientation, false)) {
+                objAdded = true;
+                break;
+            }
+        }
+
+        if (!objAdded) {
+            LOGERR << "Unable to move robot to <" << position << ">, <" << orientation << ">" << std::endl;
+        }
+    }
+}
+
 void AbstractGALoopFunction::PostExperiment()
 {
     LOG << "Generation " << m_iCurGeneration << "\t"

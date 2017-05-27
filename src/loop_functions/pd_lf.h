@@ -33,8 +33,6 @@ public:
     PDLF();
     virtual ~PDLF() {}
 
-    virtual void Reset();
-
 private:
     CRandom::CRNG* m_pcRNG;
 
