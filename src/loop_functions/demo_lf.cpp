@@ -107,9 +107,9 @@ void DemoLF::loadLUTMotor(const uint32_t kbId, const QString& absoluteFilePath) 
     }
 
     // all is fine, setting the lookup table
-    if (m_controllers[kbId]->setChromosome(chromosome)) {
+    if (!m_controllers[kbId]->setChromosome(chromosome)) {
         // something went wrong; print filepath
-        qFatal(qUtf8Printable(absoluteFilePath));
+        qFatal("\n[FATAL] Something went wrong when loading the chromosome values: %s", qUtf8Printable(absoluteFilePath));
     }
 }
 
