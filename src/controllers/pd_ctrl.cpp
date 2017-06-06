@@ -75,7 +75,7 @@ void PDCtrl::ControlStep()
 QVariant PDCtrl::randGene() const
 {
     // pure strategy: 0 (C), 1 (D) or 2 (A)
-    int strategy = m_pcRNG->Uniform(CRange<UInt32>(0, 2));
+    int strategy = m_pcRNG->Uniform(CRange<UInt32>(0, 3));
     return QVariant::fromValue(strategy);
 }
 
