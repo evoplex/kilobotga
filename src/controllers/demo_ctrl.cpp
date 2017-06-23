@@ -29,7 +29,6 @@
 
 DemoCtrl::DemoCtrl()
     : AbstractGACtrl()
-    , m_pcRNG(CRandom::CreateRNG("kilobotga"))
     , m_iLUTSize(68)
 {
 }

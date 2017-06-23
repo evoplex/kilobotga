@@ -44,7 +44,6 @@ public:
     virtual void Reset();
 
 private:
-     CRandom::CRNG*  m_pcRNG; // random number generator
      size_t m_iLUTSize; // lookup table size; it'll define the chromossome size
      std::vector<uint8_t> m_lutDistance; // range distances for each gene
 

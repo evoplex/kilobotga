@@ -19,12 +19,18 @@
 #include "abstractga_ctrl.h"
 
 AbstractGACtrl::AbstractGACtrl()
-    : m_pcMotors(NULL)
+    : m_pcRNG(CRandom::CreateRNG("kilobotga"))
+    , m_pcMotors(NULL)
     , m_pcSensorOut(NULL)
     , m_pcSensorIn(NULL)
     , m_kMaxDistance(100)
     , m_kMinDistance(34)
+    , m_kMaxForwardTicks(15)
+    , m_kMaxTurningTicks(10)
     , m_fPerformance(0.f)
+    , m_iCurrentTick(0)
+    , m_iNextMotionTick(0)
+    , m_currentMotion(STOP)
 {
 }
 
@@ -39,4 +45,55 @@ void AbstractGACtrl::Init(TConfigurationNode& t_node)
 void AbstractGACtrl::Reset()
 {
     m_fPerformance = 0.f;
+}
+
+void AbstractGACtrl::setMotion(Motion motion)
+{
+    Real left = 0.f;
+    Real right = 0.f;
+
+    switch (motion) {
+        case FORWARD: {
+            left = 1.f;
+            right = 1.f;
+            break;
+        }
+        case TURN_LEFT: {
+            right = 1.f;
+            break;
+        }
+        case TURN_RIGHT: {
+            left = 1.f;
+            break;
+        }
+        case RAND_SPEEDS: {
+            const CRange<Real> speedRange(0, 1);
+            left = m_pcRNG->Uniform(speedRange);
+            right = m_pcRNG->Uniform(speedRange);
+            break;
+        }
+        case STOP:
+        default:
+            break;
+    }
+
+    m_currentMotion = motion;
+    m_pcMotors->SetLinearVelocity(left * SPEED_SCALE, right * SPEED_SCALE);
+}
+
+void AbstractGACtrl::randWalk()
+{
+    m_iCurrentTick++;
+    if (m_iCurrentTick < m_iNextMotionTick) {
+        return;
+    }
+
+    if (m_currentMotion == FORWARD) {
+        // flip coin: left or right?
+        setMotion(m_pcRNG->Bernoulli() ? TURN_LEFT : TURN_RIGHT);
+        m_iNextMotionTick = m_iCurrentTick + m_pcRNG->Uniform(CRange<UInt32>(1, m_kMaxTurningTicks));
+    } else {
+        setMotion(FORWARD);
+        m_iNextMotionTick = m_iCurrentTick + m_pcRNG->Uniform(CRange<UInt32>(1, m_kMaxForwardTicks));
+    }
 }

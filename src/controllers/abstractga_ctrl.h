@@ -71,6 +71,8 @@ public:
     virtual void Reset();
 
 protected:
+    CRandom::CRNG*  m_pcRNG; // random number generator
+
     // actuators and sensors
     CCI_DifferentialSteeringActuator* m_pcMotors;
     CCI_KilobotCommunicationActuator* m_pcSensorOut;
@@ -80,10 +82,29 @@ protected:
     // constants
     const uint8_t m_kMaxDistance;    // maximum distance from another robot in mm
     const uint8_t m_kMinDistance;    // minimum distance from another robot in mm
+    const uint8_t m_kMaxForwardTicks;
+    const uint8_t m_kMaxTurningTicks;
 
     // genetic algorithm stuff
     float m_fPerformance; // global performance of this kilobot
     Chromosome m_chromosome;
+
+    enum Motion {
+        STOP,
+        FORWARD,
+        TURN_LEFT,
+        TURN_RIGHT,
+        RAND_SPEEDS
+    };
+
+    uint32_t m_iCurrentTick;
+    uint32_t m_iNextMotionTick;
+    Motion m_currentMotion;
+
+    void setMotion(Motion motion);
+
+    void randWalk();
+
 };
 
 #endif // ABSTRACTGA_CTRL_H

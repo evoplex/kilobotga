@@ -25,7 +25,6 @@
 
 PDCtrl::PDCtrl()
     : AbstractGACtrl()
-    , m_pcRNG(CRandom::CreateRNG("kilobotga"))
 {
     Reset();
 }
@@ -64,9 +63,7 @@ void PDCtrl::ControlStep()
     }
 
     // update speed
-    const CRange<Real> speedRange(0, 1);
-    m_pcMotors->SetLinearVelocity(m_pcRNG->Uniform(speedRange) * SPEED_SCALE,
-                                  m_pcRNG->Uniform(speedRange) * SPEED_SCALE);
+    randWalk();
 
     // led color
     m_pcLED->SetAllColors(m_curColor);
